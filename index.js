@@ -511,26 +511,7 @@ class PRLabelManager {
         pull_number: prNumber,
       });
 
-<<<<<<< Updated upstream
-      const validApprovals = reviews.filter(
-        review => review.state === 'APPROVED' && !review.dismissed_at
-      );
-
-      const hasValidApproval = validApprovals.length > 0;
-
-      if (hasValidApproval) {
-        console.log(`Found ${validApprovals.length} valid approval(s) for PR #${prNumber}`);
-        validApprovals.forEach(review => {
-          console.log(`- Approved by ${review.user.login} at ${review.submitted_at}`);
-        });
-      } else {
-        console.log(`No valid approvals found for PR #${prNumber}`);
-      }
-
-      return hasValidApproval;
-=======
       return reviews.some(review => review.state === 'APPROVED');
->>>>>>> Stashed changes
     } catch (error) {
       console.error('Error checking existing approval:', error);
       return false;
@@ -598,12 +579,7 @@ class PRLabelManager {
       const commitSha = commit.sha || commit.id || 'unknown';
       const commitMessage = commit.message || 'No message';
 
-<<<<<<< Updated upstream
-      const prs = await this.findPRsByCommit(commit.sha);
-      console.log(`Found ${prs.length} PRs by commit SHA`);
-=======
       console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
->>>>>>> Stashed changes
 
       if (commitSha && commitSha !== 'unknown') {
         const prs = await this.findPRsByCommit(commitSha);
@@ -647,16 +623,8 @@ class PRLabelManager {
     }
 
     for (const commit of commits) {
-<<<<<<< Updated upstream
-      const prs = await this.findPRsByCommit(commit.sha);
-      for (const pr of prs) {
-        await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
-        await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
-        await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
-=======
       const commitSha = commit.sha || commit.id || 'unknown';
       const commitMessage = commit.message || 'No message';
->>>>>>> Stashed changes
 
       console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
 
