@@ -572,8 +572,8 @@ class OidcClient {
             const res = yield httpclient
                 .getJson(id_token_url)
                 .catch(error => {
-                throw new Error(`Failed to get ID Token. \n 
-        Error Code : ${error.statusCode}\n 
+                throw new Error(`Failed to get ID Token. \n
+        Error Code : ${error.statusCode}\n
         Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
@@ -31799,7 +31799,7 @@ module.exports = parseParams
 /************************************************************************/
 /******/ 	// The module cache
 /******/ 	var __webpack_module_cache__ = {};
-/******/ 	
+/******/
 /******/ 	// The require function
 /******/ 	function __nccwpck_require__(moduleId) {
 /******/ 		// Check if module is in cache
@@ -31813,7 +31813,7 @@ module.exports = parseParams
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
-/******/ 	
+/******/
 /******/ 		// Execute the module function
 /******/ 		var threw = true;
 /******/ 		try {
@@ -31822,16 +31822,16 @@ module.exports = parseParams
 /******/ 		} finally {
 /******/ 			if(threw) delete __webpack_module_cache__[moduleId];
 /******/ 		}
-/******/ 	
+/******/
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/ 	
+/******/
 /************************************************************************/
 /******/ 	/* webpack/runtime/compat */
-/******/ 	
+/******/
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
-/******/ 	
+/******/
 /************************************************************************/
 var __webpack_exports__ = {};
 const core = __nccwpck_require__(7484);
@@ -32797,12 +32797,9 @@ class PRLabelManager {
         let dismissedCount = 0;
         for (const review of approvedReviews) {
           try {
-<<<<<<< Updated upstream
-=======
             console.log(
               `Attempting to dismiss review from ${review.user.login} (ID: ${review.id})`
             );
->>>>>>> Stashed changes
             await this.octokit.rest.pulls.dismissReview({
               owner: this.context.repo.owner,
               repo: this.context.repo.repo,
@@ -32810,11 +32807,8 @@ class PRLabelManager {
               review_id: review.id,
               message: 'Dismissed due to new commits - re-review required',
             });
-<<<<<<< Updated upstream
-=======
             console.log(`Successfully dismissed review from ${review.user.login}`);
             dismissedCount++;
->>>>>>> Stashed changes
           } catch (error) {
             try {
               await this.octokit.rest.pulls.requestReviewers({
@@ -32829,17 +32823,6 @@ class PRLabelManager {
           }
         }
 
-<<<<<<< Updated upstream
-        try {
-          await this.octokit.rest.pulls.requestReviewers({
-            owner: this.context.repo.owner,
-            repo: this.context.repo.repo,
-            pull_number: pr.number,
-            reviewers: uniqueApprovers,
-          });
-        } catch (error) {
-          console.log(`Error re-requesting reviews: ${error.message}`);
-=======
         if (dismissedCount === 0) {
           try {
             console.log(`Re-requesting reviews from all approvers: ${uniqueApprovers.join(', ')}`);
@@ -32853,7 +32836,6 @@ class PRLabelManager {
           } catch (error) {
             console.log(`Error re-requesting reviews: ${error.message}`);
           }
->>>>>>> Stashed changes
         }
 
         const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approvals have been dismissed due to new changes.**`;
@@ -32917,8 +32899,8 @@ class PRLabelManager {
 
       return comments.some(comment => {
         const commentDate = new Date(comment.created_at);
-        return commentDate > oneHourAgo && 
-               (comment.body.includes('deployed to production') || 
+        return commentDate > oneHourAgo &&
+               (comment.body.includes('deployed to production') ||
                 comment.body.includes('Production Deployment'));
       });
     } catch (error) {
