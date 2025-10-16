@@ -24,7 +24,7 @@ const LABELS = {
   DOCUMENTATION: 'Type: Documentation',
   REFACTOR: 'Type: Refactor',
   PERFORMANCE: 'Type: Performance',
-  SECURITY: 'Type: Security'
+  SECURITY: 'Type: Security',
 };
 
 const LABEL_COLORS = {
@@ -49,7 +49,7 @@ const LABEL_COLORS = {
   [LABELS.DOCUMENTATION]: '0075ca',
   [LABELS.REFACTOR]: '7057ff',
   [LABELS.PERFORMANCE]: '00d4aa',
-  [LABELS.SECURITY]: 'ff6b6b'
+  [LABELS.SECURITY]: 'ff6b6b',
 };
 
 // Label descriptions for automatic creation
@@ -59,23 +59,28 @@ const LABEL_DESCRIPTIONS = {
   [LABELS.REQUEST_CHANGES]: 'Reviewers have requested changes before merging.',
   [LABELS.IN_PROGRESS]: 'Review is ongoing and not yet finalized.',
   [LABELS.APPROVED]: 'All reviewers have approved the changes.',
-  [LABELS.READY_FOR_STAGING]: 'Pull request is ready to be deployed to the staging environment for testing.',
-  [LABELS.DEPLOYED_STAGING]: 'Pull request has been deployed to the staging environment for testing.',
+  [LABELS.READY_FOR_STAGING]:
+    'Pull request is ready to be deployed to the staging environment for testing.',
+  [LABELS.DEPLOYED_STAGING]:
+    'Pull request has been deployed to the staging environment for testing.',
   [LABELS.DEPLOYED_PRODUCTION]: 'Pull request has been deployed to the production environment.',
-  [LABELS.MERGE_CONFLICT]: 'Indicates that this pull request has merge conflicts that must be resolved before merging.',
+  [LABELS.MERGE_CONFLICT]:
+    'Indicates that this pull request has merge conflicts that must be resolved before merging.',
   [LABELS.MERGED]: 'Pull request has been merged.',
   [LABELS.ABANDONED]: 'Closed without being merged.',
   [LABELS.FEATURE_BASE]: 'Establishes the initial structure or foundation for a new feature.',
   [LABELS.FEATURE_PART]: 'Implements a specific part of a larger feature.',
   [LABELS.FIX_HOTFIX]: 'Urgent production fix applied directly to the main branch.',
   [LABELS.FIX_BUG]: 'Fixes a functional bug or error.',
-  [LABELS.MERGE_BLOCK_ACTION_REQUIRED]: 'Signifies that action or changes are required before this pull request can be merged.',
+  [LABELS.MERGE_BLOCK_ACTION_REQUIRED]:
+    'Signifies that action or changes are required before this pull request can be merged.',
   [LABELS.URGENT]: 'Requires immediate attention and priority handling.',
   [LABELS.BREAKING_CHANGE]: 'Contains breaking changes that may affect existing functionality.',
-  [LABELS.DOCUMENTATION]: 'Pull requests that update documentation, README files, or code comments.',
+  [LABELS.DOCUMENTATION]:
+    'Pull requests that update documentation, README files, or code comments.',
   [LABELS.REFACTOR]: 'Code refactoring without changing functionality.',
   [LABELS.PERFORMANCE]: 'Improves performance, optimization, or efficiency.',
-  [LABELS.SECURITY]: 'Addresses security vulnerabilities or implements security improvements.'
+  [LABELS.SECURITY]: 'Addresses security vulnerabilities or implements security improvements.',
 };
 
 class PRLabelManager {
@@ -96,23 +101,23 @@ class PRLabelManager {
       console.log(`Processing event: ${eventName}`);
 
       switch (eventName) {
-        case 'pull_request':
-          await this.handlePullRequestEvent();
-          break;
-        case 'pull_request_review':
-          await this.handlePullRequestReviewEvent();
-          break;
-        case 'push':
-          await this.handlePushEvent();
-          break;
-        case 'schedule':
-          await this.handleScheduledEvent();
-          break;
-        case 'issue_comment':
-          await this.handleIssueCommentEvent();
-          break;
-        default:
-          console.log(`Event ${eventName} not supported`);
+      case 'pull_request':
+        await this.handlePullRequestEvent();
+        break;
+      case 'pull_request_review':
+        await this.handlePullRequestReviewEvent();
+        break;
+      case 'push':
+        await this.handlePushEvent();
+        break;
+      case 'schedule':
+        await this.handleScheduledEvent();
+        break;
+      case 'issue_comment':
+        await this.handleIssueCommentEvent();
+        break;
+      default:
+        console.log(`Event ${eventName} not supported`);
       }
     } catch (error) {
       core.setFailed(`Action failed: ${error.message}`);
@@ -126,21 +131,21 @@ class PRLabelManager {
     console.log(`Processing PR ${action} for #${pr.number}`);
 
     switch (action) {
-      case 'opened':
-        await this.handlePROpened(pr);
-        break;
-      case 'synchronize':
-        await this.handlePRSynchronize(pr);
-        break;
-      case 'closed':
-        await this.handlePRClosed(pr);
-        break;
-      case 'converted_to_draft':
-        await this.handlePRConvertedToDraft(pr);
-        break;
-      case 'ready_for_review':
-        await this.handlePRReadyForReview(pr);
-        break;
+    case 'opened':
+      await this.handlePROpened(pr);
+      break;
+    case 'synchronize':
+      await this.handlePRSynchronize(pr);
+      break;
+    case 'closed':
+      await this.handlePRClosed(pr);
+      break;
+    case 'converted_to_draft':
+      await this.handlePRConvertedToDraft(pr);
+      break;
+    case 'ready_for_review':
+      await this.handlePRReadyForReview(pr);
+      break;
     }
   }
 
@@ -151,19 +156,19 @@ class PRLabelManager {
     console.log(`Processing review ${action} for PR #${pr.number}`);
 
     switch (action) {
-      case 'submitted':
-        if (review.state === 'changes_requested') {
-          await this.handleRequestChanges(pr);
-        } else if (review.state === 'approved') {
-          await this.handleApproval(pr);
-        } else if (review.state === 'commented') {
-          await this.handleReviewInProgress(pr);
-        }
-        break;
-      case 'dismissed':
-        // Review was dismissed, might need to update labels
-        await this.handleReviewDismissed(pr);
-        break;
+    case 'submitted':
+      if (review.state === 'changes_requested') {
+        await this.handleRequestChanges(pr);
+      } else if (review.state === 'approved') {
+        await this.handleApproval(pr);
+      } else if (review.state === 'commented') {
+        await this.handleReviewInProgress(pr);
+      }
+      break;
+    case 'dismissed':
+      // Review was dismissed, might need to update labels
+      await this.handleReviewDismissed(pr);
+      break;
     }
   }
 
@@ -317,33 +322,58 @@ class PRLabelManager {
     const body = (pr.body || '').toLowerCase();
     const combinedText = `${title} ${body}`;
 
-    if (combinedText.includes('breaking change') || combinedText.includes('breaking:') || combinedText.includes('[breaking]')) {
+    if (
+      combinedText.includes('breaking change') ||
+      combinedText.includes('breaking:') ||
+      combinedText.includes('[breaking]')
+    ) {
       await this.addLabel(pr.number, LABELS.BREAKING_CHANGE);
     }
 
-    if (combinedText.includes('docs:') || combinedText.includes('documentation') ||
-        combinedText.includes('readme') || combinedText.includes('doc/')) {
+    if (
+      combinedText.includes('docs:') ||
+      combinedText.includes('documentation') ||
+      combinedText.includes('readme') ||
+      combinedText.includes('doc/')
+    ) {
       await this.addLabel(pr.number, LABELS.DOCUMENTATION);
     }
 
-    if (combinedText.includes('refactor:') || combinedText.includes('refactoring') ||
-        combinedText.includes('cleanup') || combinedText.includes('restructure')) {
+    if (
+      combinedText.includes('refactor:') ||
+      combinedText.includes('refactoring') ||
+      combinedText.includes('cleanup') ||
+      combinedText.includes('restructure')
+    ) {
       await this.addLabel(pr.number, LABELS.REFACTOR);
     }
 
-    if (combinedText.includes('perf:') || combinedText.includes('performance') ||
-        combinedText.includes('optimize') || combinedText.includes('optimization')) {
+    if (
+      combinedText.includes('perf:') ||
+      combinedText.includes('performance') ||
+      combinedText.includes('optimize') ||
+      combinedText.includes('optimization')
+    ) {
       await this.addLabel(pr.number, LABELS.PERFORMANCE);
     }
 
-    if (combinedText.includes('security:') || combinedText.includes('security') ||
-        combinedText.includes('vulnerability') || combinedText.includes('cve-') ||
-        combinedText.includes('auth') || combinedText.includes('permission')) {
+    if (
+      combinedText.includes('security:') ||
+      combinedText.includes('security') ||
+      combinedText.includes('vulnerability') ||
+      combinedText.includes('cve-') ||
+      combinedText.includes('auth') ||
+      combinedText.includes('permission')
+    ) {
       await this.addLabel(pr.number, LABELS.SECURITY);
     }
 
-    if (combinedText.includes('urgent') || combinedText.includes('asap') ||
-        combinedText.includes('critical') || combinedText.includes('emergency')) {
+    if (
+      combinedText.includes('urgent') ||
+      combinedText.includes('asap') ||
+      combinedText.includes('critical') ||
+      combinedText.includes('emergency')
+    ) {
       await this.addLabel(pr.number, LABELS.URGENT);
     }
   }
@@ -354,7 +384,7 @@ class PRLabelManager {
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
         head: `${this.context.repo.owner}:${branchName}`,
-        state: 'open'
+        state: 'open',
       });
 
       return prs.length > 0 ? prs[0] : null;
@@ -399,7 +429,7 @@ class PRLabelManager {
       const { data: prs } = await this.octokit.rest.pulls.list({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
-        state: 'all'
+        state: 'all',
       });
 
       const matchingPRs = [];
@@ -409,7 +439,7 @@ class PRLabelManager {
           const { data: commits } = await this.octokit.rest.pulls.listCommits({
             owner: this.context.repo.owner,
             repo: this.context.repo.repo,
-            pull_number: pr.number
+            pull_number: pr.number,
           });
 
           if (commits.some(commit => commit.sha === commitSha)) {
@@ -432,7 +462,7 @@ class PRLabelManager {
       const { data: prs } = await this.octokit.rest.pulls.list({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
-        state: 'open'
+        state: 'open',
       });
 
       const cutoffDate = new Date();
@@ -456,14 +486,14 @@ class PRLabelManager {
       const { data: prs } = await this.octokit.rest.pulls.list({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
-        state: 'open'
+        state: 'open',
       });
 
       for (const pr of prs) {
         const { data: prData } = await this.octokit.rest.pulls.get({
           owner: this.context.repo.owner,
           repo: this.context.repo.repo,
-          pull_number: pr.number
+          pull_number: pr.number,
         });
 
         if (prData.mergeable === false) {
@@ -485,7 +515,7 @@ class PRLabelManager {
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
         issue_number: prNumber,
-        labels: [labelName]
+        labels: [labelName],
       });
 
       console.log(`Added label "${labelName}" to PR #${prNumber}`);
@@ -500,7 +530,7 @@ class PRLabelManager {
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
         issue_number: prNumber,
-        name: labelName
+        name: labelName,
       });
 
       console.log(`Removed label "${labelName}" from PR #${prNumber}`);
@@ -514,7 +544,7 @@ class PRLabelManager {
       await this.octokit.rest.issues.getLabel({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
-        name: labelName
+        name: labelName,
       });
     } catch (error) {
       if (error.status === 404) {
@@ -526,11 +556,13 @@ class PRLabelManager {
           owner: this.context.repo.owner,
           repo: this.context.repo.repo,
           name: labelName,
-          color: color,
-          description: description
+          color,
+          description,
         });
 
-        console.log(`Created label "${labelName}" with color ${color} and description: ${description}`);
+        console.log(
+          `Created label "${labelName}" with color ${color} and description: ${description}`,
+        );
       } else {
         throw error;
       }
@@ -542,7 +574,7 @@ class PRLabelManager {
       const { data: reviews } = await this.octokit.rest.pulls.listReviews({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
-        pull_number: pr.number
+        pull_number: pr.number,
       });
 
       const reviewers = [...new Set(reviews.map(review => review.user.login))];
@@ -554,7 +586,7 @@ class PRLabelManager {
           owner: this.context.repo.owner,
           repo: this.context.repo.repo,
           issue_number: pr.number,
-          body: comment
+          body: comment,
         });
       }
     } catch (error) {
@@ -577,7 +609,7 @@ class PRLabelManager {
           owner: this.context.repo.owner,
           repo: this.context.repo.repo,
           issue_number: pr.number,
-          body: message
+          body: message,
         });
       }
     } catch (error) {
@@ -594,23 +626,23 @@ class PRLabelManager {
       let message = '';
 
       switch (type) {
-        case 'action_required':
-          message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
-          break;
-        case 'urgent':
-          message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
-          break;
-        case 'breaking':
-          message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
-          break;
-        case 'security':
-          message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
-          break;
-        case 'production':
-          message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
-          break;
-        default:
-          message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
+      case 'action_required':
+        message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
+        break;
+      case 'urgent':
+        message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
+        break;
+      case 'breaking':
+        message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
+        break;
+      case 'security':
+        message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
+        break;
+      case 'production':
+        message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
+        break;
+      default:
+        message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
       }
 
       if (message) {
@@ -618,7 +650,7 @@ class PRLabelManager {
           owner: this.context.repo.owner,
           repo: this.context.repo.repo,
           issue_number: prNumber,
-          body: message
+          body: message,
         });
       }
     } catch (error) {
