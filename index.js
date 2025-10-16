@@ -958,8 +958,6 @@ class PRLabelManager {
       const uniqueApprovers = [...new Set(approvers)];
 
       if (uniqueApprovers.length > 0) {
-        // Tentar dismissar reviews (pode falhar por permissões)
-        let dismissedCount = 0;
         for (const review of approvedReviews) {
           try {
             await this.octokit.rest.pulls.dismissReview({
@@ -969,11 +967,7 @@ class PRLabelManager {
               review_id: review.id,
               message: 'Dismissed due to new commits - re-review required',
             });
-            console.log(`Dismissed approval review from ${review.user.login}`);
-            dismissedCount++;
           } catch (error) {
-            console.log(`Error dismissing review from ${review.user.login}: ${error.message}`);
-            // Se não conseguir dismissar, vamos tentar re-request review
             try {
               await this.octokit.rest.pulls.requestReviewers({
                 owner: this.context.repo.owner,
@@ -981,14 +975,14 @@ class PRLabelManager {
                 pull_number: pr.number,
                 reviewers: [review.user.login],
               });
-              console.log(`Re-requested review from ${review.user.login}`);
             } catch (requestError) {
-              console.log(`Error re-requesting review from ${review.user.login}: ${requestError.message}`);
+              console.log(
+                `Error re-requesting review from ${review.user.login}: ${requestError.message}`
+              );
             }
           }
         }
 
-        // Re-request review de todos os aprovadores para forçar nova revisão
         try {
           await this.octokit.rest.pulls.requestReviewers({
             owner: this.context.repo.owner,
@@ -996,7 +990,6 @@ class PRLabelManager {
             pull_number: pr.number,
             reviewers: uniqueApprovers,
           });
-          console.log(`Re-requested reviews from all approvers: ${uniqueApprovers.join(', ')}`);
         } catch (error) {
           console.log(`Error re-requesting reviews: ${error.message}`);
         }
@@ -1009,12 +1002,6 @@ class PRLabelManager {
           issue_number: pr.number,
           body: comment,
         });
-
-        console.log(
-          `Dismissed ${dismissedCount}/${approvedReviews.length} approval(s) and re-requested reviews from ${uniqueApprovers.length} approvers: ${uniqueApprovers.join(', ')}`
-        );
-      } else {
-        console.log('No previous approvers found to notify');
       }
     } catch (error) {
       console.log(`Error notifying approvers for re-review: ${error.message}`);
