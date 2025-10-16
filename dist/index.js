@@ -32445,7 +32445,8 @@ class PRLabelManager {
 
         for (const pr of prs) {
           console.log(`PR #${pr.number} - State: ${pr.state}, Merged: ${pr.merged_at}`);
-          if (!processedPRs.has(pr.number) && pr.state === 'closed' && pr.merged_at) {
+          const isRelevant = pr.state === 'closed' && pr.merged_at || pr.state === 'open';
+          if (!processedPRs.has(pr.number) && isRelevant) {
             console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
             await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
             await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
@@ -32657,10 +32658,16 @@ class PRLabelManager {
           const prs = await this.findPRsByBranchName(branchName);
           console.log(`Found ${prs.length} PRs for branch ${branchName}`);
 
-          const mergedPRs = prs.filter(pr => pr.state === 'closed' && pr.merged_at);
-          console.log(`Filtered to ${mergedPRs.length} merged PRs`);
+          // For staging deployment, we want PRs that are either merged OR open (since they might be merged into staging while still open)
+          const relevantPRs = prs.filter(pr => {
+            const isMerged = pr.state === 'closed' && pr.merged_at;
+            const isOpen = pr.state === 'open';
+            console.log(`PR #${pr.number} - State: ${pr.state}, Merged: ${pr.merged_at}, Relevant: ${isMerged || isOpen}`);
+            return isMerged || isOpen;
+          });
+          console.log(`Filtered to ${relevantPRs.length} relevant PRs`);
 
-          return mergedPRs;
+          return relevantPRs;
         }
       }
 
