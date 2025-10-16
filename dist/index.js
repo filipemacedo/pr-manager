@@ -32600,7 +32600,7 @@ class PRLabelManager {
         /Merge PR #(\d+)/,
         /Merged PR #(\d+)/,
         /Auto-merge of #(\d+)/,
-        /Merge.*#(\d+)/
+        /Merge.*#(\d+)/,
       ];
 
       for (const pattern of patterns) {
@@ -32616,8 +32616,10 @@ class PRLabelManager {
               pull_number: prNumber,
             });
 
-            console.log(`PR #${prNumber} details - State: ${pr.state}, Merged: ${pr.merged_at}, Head: ${pr.head.ref}`);
-            
+            console.log(
+              `PR #${prNumber} details - State: ${pr.state}, Merged: ${pr.merged_at}, Head: ${pr.head.ref}`
+            );
+
             if (pr.state === 'closed' && pr.merged_at) {
               console.log(`PR #${prNumber} was merged, including in results`);
               return [pr];
@@ -32633,21 +32635,27 @@ class PRLabelManager {
       const branchPatterns = [
         /Merge branch '([^']+)'/,
         /Merge.*branch ([^\s]+)/,
-        /Merged.*branch ([^\s]+)/
+        /Merged.*branch ([^\s]+)/,
       ];
 
       for (const pattern of branchPatterns) {
         const match = commitMessage.match(pattern);
         if (match) {
-          const branchName = match[1];
+          let branchName = match[1];
           console.log(`Found branch name in commit message: ${branchName} (pattern: ${pattern})`);
+
+          // Remove 'origin/' prefix if present
+          if (branchName.startsWith('origin/')) {
+            branchName = branchName.replace('origin/', '');
+            console.log(`Cleaned branch name: ${branchName}`);
+          }
 
           const prs = await this.findPRsByBranchName(branchName);
           console.log(`Found ${prs.length} PRs for branch ${branchName}`);
-          
+
           const mergedPRs = prs.filter(pr => pr.state === 'closed' && pr.merged_at);
           console.log(`Filtered to ${mergedPRs.length} merged PRs`);
-          
+
           return mergedPRs;
         }
       }
