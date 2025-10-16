@@ -12,8 +12,6 @@
     "release:minor": "npm version minor && git push --follow-tags",
     "release:major": "npm version major && git push --follow-tags",
     "release:dry-run": "npm version --dry-run",
-    "precommit": "npm run lint",
-    "prepare": "husky install || true",
     "docs:update": "echo 'Documentation updated'",
     "clean": "echo 'No cleanup needed'",
     "dev": "echo 'Development mode - watching for changes'",
