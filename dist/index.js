@@ -31937,23 +31937,23 @@ class PRLabelManager {
       console.log(`Processing event: ${eventName}`);
 
       switch (eventName) {
-      case 'pull_request':
-        await this.handlePullRequestEvent();
-        break;
-      case 'pull_request_review':
-        await this.handlePullRequestReviewEvent();
-        break;
-      case 'push':
-        await this.handlePushEvent();
-        break;
-      case 'schedule':
-        await this.handleScheduledEvent();
-        break;
-      case 'issue_comment':
-        await this.handleIssueCommentEvent();
-        break;
-      default:
-        console.log(`Event ${eventName} not supported`);
+        case 'pull_request':
+          await this.handlePullRequestEvent();
+          break;
+        case 'pull_request_review':
+          await this.handlePullRequestReviewEvent();
+          break;
+        case 'push':
+          await this.handlePushEvent();
+          break;
+        case 'schedule':
+          await this.handleScheduledEvent();
+          break;
+        case 'issue_comment':
+          await this.handleIssueCommentEvent();
+          break;
+        default:
+          console.log(`Event ${eventName} not supported`);
       }
     } catch (error) {
       core.setFailed(`Action failed: ${error.message}`);
@@ -31967,24 +31967,24 @@ class PRLabelManager {
     console.log(`Processing PR ${action} for #${pr.number}`);
 
     switch (action) {
-    case 'opened':
-      await this.handlePROpened(pr);
-      break;
-    case 'synchronize':
-      await this.handlePRSynchronize(pr);
-      break;
-    case 'closed':
-      await this.handlePRClosed(pr);
-      break;
-    case 'converted_to_draft':
-      await this.handlePRConvertedToDraft(pr);
-      break;
-    case 'ready_for_review':
-      await this.handlePRReadyForReview(pr);
-      break;
-    case 'edited':
-      await this.handlePREdited(pr, changes);
-      break;
+      case 'opened':
+        await this.handlePROpened(pr);
+        break;
+      case 'synchronize':
+        await this.handlePRSynchronize(pr);
+        break;
+      case 'closed':
+        await this.handlePRClosed(pr);
+        break;
+      case 'converted_to_draft':
+        await this.handlePRConvertedToDraft(pr);
+        break;
+      case 'ready_for_review':
+        await this.handlePRReadyForReview(pr);
+        break;
+      case 'edited':
+        await this.handlePREdited(pr, changes);
+        break;
     }
   }
 
@@ -31995,19 +31995,19 @@ class PRLabelManager {
     console.log(`Processing review ${action} for PR #${pr.number}`);
 
     switch (action) {
-    case 'submitted':
-      if (review.state === 'changes_requested') {
-        await this.handleRequestChanges(pr);
-      } else if (review.state === 'approved') {
-        await this.handleApproval(pr);
-      } else if (review.state === 'commented') {
-        await this.handleReviewInProgress(pr);
-      }
-      break;
-    case 'dismissed':
-      // Review was dismissed, might need to update labels
-      await this.handleReviewDismissed(pr);
-      break;
+      case 'submitted':
+        if (review.state === 'changes_requested') {
+          await this.handleRequestChanges(pr);
+        } else if (review.state === 'approved') {
+          await this.handleApproval(pr);
+        } else if (review.state === 'commented') {
+          await this.handleReviewInProgress(pr);
+        }
+        break;
+      case 'dismissed':
+        // Review was dismissed, might need to update labels
+        await this.handleReviewDismissed(pr);
+        break;
     }
   }
 
@@ -32247,7 +32247,7 @@ class PRLabelManager {
     });
 
     const currentLabelNames = currentLabels.map(label => label.name);
-    
+
     // Remover labels baseadas em conteúdo que não se aplicam mais
     const contentBasedLabels = [
       LABELS.BREAKING_CHANGE,
@@ -32255,7 +32255,7 @@ class PRLabelManager {
       LABELS.REFACTOR,
       LABELS.PERFORMANCE,
       LABELS.SECURITY,
-      LABELS.URGENT
+      LABELS.URGENT,
     ];
 
     for (const labelName of contentBasedLabels) {
@@ -32278,39 +32278,51 @@ class PRLabelManager {
     const combinedText = `${title} ${body}`;
 
     switch (labelName) {
-    case LABELS.BREAKING_CHANGE:
-      return combinedText.includes('breaking change') ||
-             combinedText.includes('breaking:') ||
-             combinedText.includes('[breaking]');
-    case LABELS.DOCUMENTATION:
-      return combinedText.includes('docs:') ||
-             combinedText.includes('documentation') ||
-             combinedText.includes('readme') ||
-             combinedText.includes('doc/');
-    case LABELS.REFACTOR:
-      return combinedText.includes('refactor:') ||
-             combinedText.includes('refactoring') ||
-             combinedText.includes('cleanup') ||
-             combinedText.includes('restructure');
-    case LABELS.PERFORMANCE:
-      return combinedText.includes('perf:') ||
-             combinedText.includes('performance') ||
-             combinedText.includes('optimize') ||
-             combinedText.includes('optimization');
-    case LABELS.SECURITY:
-      return combinedText.includes('security:') ||
-             combinedText.includes('security') ||
-             combinedText.includes('vulnerability') ||
-             combinedText.includes('cve-') ||
-             combinedText.includes('auth') ||
-             combinedText.includes('permission');
-    case LABELS.URGENT:
-      return combinedText.includes('urgent') ||
-             combinedText.includes('asap') ||
-             combinedText.includes('critical') ||
-             combinedText.includes('emergency');
-    default:
-      return false;
+      case LABELS.BREAKING_CHANGE:
+        return (
+          combinedText.includes('breaking change') ||
+          combinedText.includes('breaking:') ||
+          combinedText.includes('[breaking]')
+        );
+      case LABELS.DOCUMENTATION:
+        return (
+          combinedText.includes('docs:') ||
+          combinedText.includes('documentation') ||
+          combinedText.includes('readme') ||
+          combinedText.includes('doc/')
+        );
+      case LABELS.REFACTOR:
+        return (
+          combinedText.includes('refactor:') ||
+          combinedText.includes('refactoring') ||
+          combinedText.includes('cleanup') ||
+          combinedText.includes('restructure')
+        );
+      case LABELS.PERFORMANCE:
+        return (
+          combinedText.includes('perf:') ||
+          combinedText.includes('performance') ||
+          combinedText.includes('optimize') ||
+          combinedText.includes('optimization')
+        );
+      case LABELS.SECURITY:
+        return (
+          combinedText.includes('security:') ||
+          combinedText.includes('security') ||
+          combinedText.includes('vulnerability') ||
+          combinedText.includes('cve-') ||
+          combinedText.includes('auth') ||
+          combinedText.includes('permission')
+        );
+      case LABELS.URGENT:
+        return (
+          combinedText.includes('urgent') ||
+          combinedText.includes('asap') ||
+          combinedText.includes('critical') ||
+          combinedText.includes('emergency')
+        );
+      default:
+        return false;
     }
   }
 
@@ -32346,21 +32358,70 @@ class PRLabelManager {
     }
   }
 
+  async findPRsByBranchName(branchName) {
+    try {
+      // Buscar PRs abertos que usam essa branch
+      const { data: openPRs } = await this.octokit.rest.pulls.list({
+        owner: this.context.repo.owner,
+        repo: this.context.repo.repo,
+        state: 'open',
+        head: `${this.context.repo.owner}:${branchName}`,
+      });
+
+      // Buscar PRs fechados que usaram essa branch (últimos 30 dias)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { data: closedPRs } = await this.octokit.rest.pulls.list({
+        owner: this.context.repo.owner,
+        repo: this.context.repo.repo,
+        state: 'closed',
+        head: `${this.context.repo.owner}:${branchName}`,
+        sort: 'updated',
+        direction: 'desc',
+        per_page: 10,
+      });
+
+      // Filtrar apenas PRs merged recentes
+      const mergedPRs = closedPRs.filter(pr => 
+        pr.merged_at && 
+        new Date(pr.merged_at) > thirtyDaysAgo
+      );
+
+      return [...openPRs, ...mergedPRs];
+    } catch (error) {
+      console.log(`Error finding PRs for branch ${branchName}: ${error.message}`);
+      return [];
+    }
+  }
+
   async handleStagingDeployment(commits) {
     console.log('Handling staging deployment...');
 
     for (const commit of commits) {
+      console.log(`Processing commit: ${commit.sha} - ${commit.message}`);
+
       // Buscar PRs por commit SHA
       const prs = await this.findPRsByCommit(commit.sha);
+      console.log(`Found ${prs.length} PRs by commit SHA`);
+      
       for (const pr of prs) {
+        console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
         await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
         await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
       }
 
       // Buscar PRs por mensagem de commit (caso o commit seja um merge)
-      if (commit.message.includes('Merge pull request') || commit.message.includes('Merge branch')) {
+      if (
+        commit.message.includes('Merge pull request') ||
+        commit.message.includes('Merge branch')
+      ) {
+        console.log('Commit appears to be a merge, checking commit message...');
         const prsByMessage = await this.findPRsByCommitMessage(commit.message);
+        console.log(`Found ${prsByMessage.length} PRs by commit message`);
+        
         for (const pr of prsByMessage) {
+          console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title}) via message`);
           await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
           await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
         }
@@ -32387,7 +32448,10 @@ class PRLabelManager {
       }
 
       // Buscar PRs por mensagem de commit (caso o commit seja um merge)
-      if (commit.message.includes('Merge pull request') || commit.message.includes('Merge branch')) {
+      if (
+        commit.message.includes('Merge pull request') ||
+        commit.message.includes('Merge branch')
+      ) {
         const prsByMessage = await this.findPRsByCommitMessage(commit.message);
         for (const pr of prsByMessage) {
           await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
@@ -32406,10 +32470,43 @@ class PRLabelManager {
 
   async findPRsByCommit(commitSha) {
     try {
+      // Primeiro, tentar encontrar o PR diretamente pelo commit SHA
+      try {
+        const { data: commit } = await this.octokit.rest.repos.getCommit({
+          owner: this.context.repo.owner,
+          repo: this.context.repo.repo,
+          ref: commitSha,
+        });
+
+        // Verificar se o commit tem PRs associados
+        if (commit.pull_requests && commit.pull_requests.length > 0) {
+          const prs = [];
+          for (const prRef of commit.pull_requests) {
+            try {
+              const { data: pr } = await this.octokit.rest.pulls.get({
+                owner: this.context.repo.owner,
+                repo: this.context.repo.repo,
+                pull_number: prRef.number,
+              });
+              prs.push(pr);
+            } catch (error) {
+              console.log(`Error fetching PR #${prRef.number}: ${error.message}`);
+            }
+          }
+          return prs;
+        }
+      } catch (error) {
+        console.log(`Error getting commit details: ${error.message}`);
+      }
+
+      // Fallback: buscar PRs abertos que contêm o commit
       const { data: prs } = await this.octokit.rest.pulls.list({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
-        state: 'all',
+        state: 'open',
+        sort: 'updated',
+        direction: 'desc',
+        per_page: 50, // Limitar para performance
       });
 
       const matchingPRs = [];
@@ -32420,6 +32517,7 @@ class PRLabelManager {
             owner: this.context.repo.owner,
             repo: this.context.repo.repo,
             pull_number: pr.number,
+            per_page: 100,
           });
 
           if (commits.some(commit => commit.sha === commitSha)) {
@@ -32439,25 +32537,69 @@ class PRLabelManager {
 
   async findPRsByCommitMessage(commitMessage) {
     try {
-      // Extrair número do PR da mensagem de commit
+      console.log(`Analyzing commit message: ${commitMessage}`);
+
+      // Extrair número do PR da mensagem de commit (formato GitHub)
       const prMatch = commitMessage.match(/Merge pull request #(\d+)/);
       if (prMatch) {
         const prNumber = parseInt(prMatch[1]);
-        const { data: pr } = await this.octokit.rest.pulls.get({
-          owner: this.context.repo.owner,
-          repo: this.context.repo.repo,
-          pull_number: prNumber,
-        });
-        return [pr];
+        console.log(`Found PR number in commit message: #${prNumber}`);
+        
+        try {
+          const { data: pr } = await this.octokit.rest.pulls.get({
+            owner: this.context.repo.owner,
+            repo: this.context.repo.repo,
+            pull_number: prNumber,
+          });
+          
+          // Verificar se o PR está fechado e foi merged
+          if (pr.state === 'closed' && pr.merged_at) {
+            console.log(`PR #${prNumber} was merged, including in results`);
+            return [pr];
+          } else {
+            console.log(`PR #${prNumber} is not merged, skipping`);
+            return [];
+          }
+        } catch (error) {
+          console.log(`Error fetching PR #${prNumber}: ${error.message}`);
+          return [];
+        }
       }
 
       // Extrair nome da branch da mensagem de commit
       const branchMatch = commitMessage.match(/Merge branch '([^']+)'/);
       if (branchMatch) {
         const branchName = branchMatch[1];
-        return await this.findPRByBranch(branchName);
+        console.log(`Found branch name in commit message: ${branchName}`);
+        
+        // Buscar PRs que usaram essa branch
+        const prs = await this.findPRsByBranchName(branchName);
+        console.log(`Found ${prs.length} PRs for branch ${branchName}`);
+        return prs;
       }
 
+      // Tentar outros padrões de merge
+      const autoMergeMatch = commitMessage.match(/Auto-merge of #(\d+)/);
+      if (autoMergeMatch) {
+        const prNumber = parseInt(autoMergeMatch[1]);
+        console.log(`Found auto-merge PR number: #${prNumber}`);
+        
+        try {
+          const { data: pr } = await this.octokit.rest.pulls.get({
+            owner: this.context.repo.owner,
+            repo: this.context.repo.repo,
+            pull_number: prNumber,
+          });
+          
+          if (pr.state === 'closed' && pr.merged_at) {
+            return [pr];
+          }
+        } catch (error) {
+          console.log(`Error fetching auto-merge PR #${prNumber}: ${error.message}`);
+        }
+      }
+
+      console.log('No PR patterns found in commit message');
       return [];
     } catch (error) {
       console.log(`Error finding PRs by commit message: ${error.message}`);
@@ -32569,7 +32711,7 @@ class PRLabelManager {
         });
 
         console.log(
-          `Created label "${labelName}" with color ${color} and description: ${description}`,
+          `Created label "${labelName}" with color ${color} and description: ${description}`
         );
       } else {
         throw error;
@@ -32634,23 +32776,23 @@ class PRLabelManager {
       let message = '';
 
       switch (type) {
-      case 'action_required':
-        message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
-        break;
-      case 'urgent':
-        message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
-        break;
-      case 'breaking':
-        message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
-        break;
-      case 'security':
-        message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
-        break;
-      case 'production':
-        message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
-        break;
-      default:
-        message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
+        case 'action_required':
+          message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
+          break;
+        case 'urgent':
+          message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
+          break;
+        case 'breaking':
+          message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
+          break;
+        case 'security':
+          message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
+          break;
+        case 'production':
+          message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
+          break;
+        default:
+          message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
       }
 
       if (message) {
