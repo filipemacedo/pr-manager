@@ -572,8 +572,8 @@ class OidcClient {
             const res = yield httpclient
                 .getJson(id_token_url)
                 .catch(error => {
-                throw new Error(`Failed to get ID Token. \n
-        Error Code : ${error.statusCode}\n
+                throw new Error(`Failed to get ID Token. \n 
+        Error Code : ${error.statusCode}\n 
         Error Message: ${error.message}`);
             });
             const id_token = (_a = res.result) === null || _a === void 0 ? void 0 : _a.value;
@@ -31799,7 +31799,7 @@ module.exports = parseParams
 /************************************************************************/
 /******/ 	// The module cache
 /******/ 	var __webpack_module_cache__ = {};
-/******/
+/******/ 	
 /******/ 	// The require function
 /******/ 	function __nccwpck_require__(moduleId) {
 /******/ 		// Check if module is in cache
@@ -31813,7 +31813,7 @@ module.exports = parseParams
 /******/ 			// no module.loaded needed
 /******/ 			exports: {}
 /******/ 		};
-/******/
+/******/ 	
 /******/ 		// Execute the module function
 /******/ 		var threw = true;
 /******/ 		try {
@@ -31822,16 +31822,16 @@ module.exports = parseParams
 /******/ 		} finally {
 /******/ 			if(threw) delete __webpack_module_cache__[moduleId];
 /******/ 		}
-/******/
+/******/ 	
 /******/ 		// Return the exports of the module
 /******/ 		return module.exports;
 /******/ 	}
-/******/
+/******/ 	
 /************************************************************************/
 /******/ 	/* webpack/runtime/compat */
-/******/
+/******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
-/******/
+/******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
 const core = __nccwpck_require__(7484);
@@ -32797,9 +32797,6 @@ class PRLabelManager {
         let dismissedCount = 0;
         for (const review of approvedReviews) {
           try {
-            console.log(
-              `Attempting to dismiss review from ${review.user.login} (ID: ${review.id})`
-            );
             await this.octokit.rest.pulls.dismissReview({
               owner: this.context.repo.owner,
               repo: this.context.repo.repo,
@@ -32818,7 +32815,9 @@ class PRLabelManager {
                 reviewers: [review.user.login],
               });
             } catch (requestError) {
-              console.log(`Error re-requesting review from ${review.user.login}: ${requestError.message}`);
+              console.log(
+                `Error re-requesting review from ${review.user.login}: ${requestError.message}`
+              );
             }
           }
         }
@@ -32857,7 +32856,9 @@ class PRLabelManager {
       if (type === 'production') {
         const hasRecentNotification = await this.hasRecentDeployNotification(pr.number);
         if (hasRecentNotification) {
-          console.log(`Skipping production notification for PR #${pr.number} - recent notification found`);
+          console.log(
+            `Skipping production notification for PR #${pr.number} - recent notification found`
+          );
           return;
         }
       }
@@ -32899,9 +32900,11 @@ class PRLabelManager {
 
       return comments.some(comment => {
         const commentDate = new Date(comment.created_at);
-        return commentDate > oneHourAgo &&
-               (comment.body.includes('deployed to production') ||
-                comment.body.includes('Production Deployment'));
+        return (
+          commentDate > oneHourAgo &&
+          (comment.body.includes('deployed to production') ||
+            comment.body.includes('Production Deployment'))
+        );
       });
     } catch (error) {
       console.log(`Error checking recent notifications: ${error.message}`);

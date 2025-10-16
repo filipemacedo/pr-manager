@@ -968,11 +968,8 @@ class PRLabelManager {
               review_id: review.id,
               message: 'Dismissed due to new commits - re-review required',
             });
-<<<<<<< Updated upstream
-=======
             console.log(`Successfully dismissed review from ${review.user.login}`);
             dismissedCount++;
->>>>>>> Stashed changes
           } catch (error) {
             try {
               await this.octokit.rest.pulls.requestReviewers({
@@ -989,17 +986,6 @@ class PRLabelManager {
           }
         }
 
-<<<<<<< Updated upstream
-        try {
-          await this.octokit.rest.pulls.requestReviewers({
-            owner: this.context.repo.owner,
-            repo: this.context.repo.repo,
-            pull_number: pr.number,
-            reviewers: uniqueApprovers,
-          });
-        } catch (error) {
-          console.log(`Error re-requesting reviews: ${error.message}`);
-=======
         if (dismissedCount === 0) {
           try {
             console.log(`Re-requesting reviews from all approvers: ${uniqueApprovers.join(', ')}`);
@@ -1013,7 +999,6 @@ class PRLabelManager {
           } catch (error) {
             console.log(`Error re-requesting reviews: ${error.message}`);
           }
->>>>>>> Stashed changes
         }
 
         const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approvals have been dismissed due to new changes.**`;
