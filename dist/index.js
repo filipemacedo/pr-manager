@@ -32786,14 +32786,30 @@ class PRLabelManager {
         pull_number: pr.number,
       });
 
-      const approvers = reviews
-        .filter(review => review.state === 'APPROVED')
-        .map(review => review.user.login);
+      const approvedReviews = reviews.filter(
+        review => review.state === 'APPROVED' && !review.dismissed_at
+      );
 
+      const approvers = approvedReviews.map(review => review.user.login);
       const uniqueApprovers = [...new Set(approvers)];
 
       if (uniqueApprovers.length > 0) {
-        const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approval has been removed due to new changes.**`;
+        for (const review of approvedReviews) {
+          try {
+            await this.octokit.rest.pulls.dismissReview({
+              owner: this.context.repo.owner,
+              repo: this.context.repo.repo,
+              pull_number: pr.number,
+              review_id: review.id,
+              message: 'Dismissed due to new commits - re-review required',
+            });
+            console.log(`Dismissed approval review from ${review.user.login}`);
+          } catch (error) {
+            console.log(`Error dismissing review from ${review.user.login}: ${error.message}`);
+          }
+        }
+
+        const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approvals have been dismissed due to new changes.**`;
 
         await this.octokit.rest.issues.createComment({
           owner: this.context.repo.owner,
@@ -32803,7 +32819,7 @@ class PRLabelManager {
         });
 
         console.log(
-          `Notified ${uniqueApprovers.length} approvers for re-review: ${uniqueApprovers.join(', ')}`
+          `Dismissed ${approvedReviews.length} approval(s) and notified ${uniqueApprovers.length} approvers for re-review: ${uniqueApprovers.join(', ')}`
         );
       } else {
         console.log('No previous approvers found to notify');
