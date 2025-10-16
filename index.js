@@ -261,11 +261,13 @@ class PRLabelManager {
 
       await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
 
-      await this.notifyApproversForReReview(pr);
+      await this.notifyReviewers(pr);
     } else {
       console.log(`PR #${pr.number} had no previous approval, normal flow`);
 
       await this.removeLabel(pr.number, LABELS.REQUEST_CHANGES);
+      await this.removeLabel(pr.number, LABELS.IN_PROGRESS);
+      await this.removeLabel(pr.number, LABELS.APPROVED);
       await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
       await this.notifyReviewers(pr);
     }
@@ -964,31 +966,6 @@ class PRLabelManager {
         pull_number: pr.number,
       });
 
-      const reviewers = [...new Set(reviews.map(review => review.user.login))];
-
-      if (reviewers.length > 0) {
-        const comment = `@${reviewers.join(' @')} New commits have been pushed. Please review the changes.`;
-
-        await this.octokit.rest.issues.createComment({
-          owner: this.context.repo.owner,
-          repo: this.context.repo.repo,
-          issue_number: pr.number,
-          body: comment,
-        });
-      }
-    } catch (error) {
-      console.log(`Error notifying reviewers: ${error.message}`);
-    }
-  }
-
-  async notifyApproversForReReview(pr) {
-    try {
-      const { data: reviews } = await this.octokit.rest.pulls.listReviews({
-        owner: this.context.repo.owner,
-        repo: this.context.repo.repo,
-        pull_number: pr.number,
-      });
-
       const approvedReviews = reviews.filter(
         review => review.state === 'APPROVED' && !review.dismissed_at
       );
@@ -1025,7 +1002,7 @@ class PRLabelManager {
           console.log(`Error re-requesting reviews: ${error.message}`);
         }
 
-        const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approvals have been dismissed due to new changes.**`;
+        const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your review. Please review the changes and re-approve if everything looks good.\n\n**Previous approvals have been dismissed due to new changes.**`;
 
         await this.octokit.rest.issues.createComment({
           owner: this.context.repo.owner,
