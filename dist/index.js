@@ -32431,7 +32431,7 @@ class PRLabelManager {
         for (const pr of prsByMessage) {
           if (!processedPRs.has(pr.number)) {
             console.log(
-              `Adding deployed staging label to PR #${pr.number} (${pr.title}) via message`
+              `Adding deployed staging label to PR #${pr.number} (${pr.title}) via message - State: ${pr.state}, Merged: ${pr.merged_at}`
             );
             await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
             await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
@@ -32439,10 +32439,12 @@ class PRLabelManager {
           }
         }
       } else if (commitSha && commitSha !== 'unknown') {
+        console.log(`Searching for PRs by commit SHA: ${commitSha}`);
         const prs = await this.findPRsByCommit(commitSha);
         console.log(`Found ${prs.length} PRs by commit SHA`);
 
         for (const pr of prs) {
+          console.log(`PR #${pr.number} - State: ${pr.state}, Merged: ${pr.merged_at}`);
           if (!processedPRs.has(pr.number) && pr.state === 'closed' && pr.merged_at) {
             console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
             await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
@@ -32454,6 +32456,8 @@ class PRLabelManager {
         console.log('Skipping commit SHA search - no valid SHA found');
       }
     }
+
+    console.log(`Total PRs processed: ${processedPRs.size}`);
   }
 
   async handleProductionDeployment(commits) {
@@ -32591,58 +32595,60 @@ class PRLabelManager {
     try {
       console.log(`Analyzing commit message: ${commitMessage}`);
 
-      const prMatch = commitMessage.match(/Merge pull request #(\d+)/);
-      if (prMatch) {
-        const prNumber = parseInt(prMatch[1]);
-        console.log(`Found PR number in commit message: #${prNumber}`);
+      const patterns = [
+        /Merge pull request #(\d+)/,
+        /Merge PR #(\d+)/,
+        /Merged PR #(\d+)/,
+        /Auto-merge of #(\d+)/,
+        /Merge.*#(\d+)/
+      ];
 
-        try {
-          const { data: pr } = await this.octokit.rest.pulls.get({
-            owner: this.context.repo.owner,
-            repo: this.context.repo.repo,
-            pull_number: prNumber,
-          });
+      for (const pattern of patterns) {
+        const match = commitMessage.match(pattern);
+        if (match) {
+          const prNumber = parseInt(match[1]);
+          console.log(`Found PR number in commit message: #${prNumber} (pattern: ${pattern})`);
 
-          if (pr.state === 'closed' && pr.merged_at) {
-            console.log(`PR #${prNumber} was merged, including in results`);
-            return [pr];
-          } else {
-            console.log(`PR #${prNumber} is not merged, skipping`);
-            return [];
+          try {
+            const { data: pr } = await this.octokit.rest.pulls.get({
+              owner: this.context.repo.owner,
+              repo: this.context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            console.log(`PR #${prNumber} details - State: ${pr.state}, Merged: ${pr.merged_at}, Head: ${pr.head.ref}`);
+            
+            if (pr.state === 'closed' && pr.merged_at) {
+              console.log(`PR #${prNumber} was merged, including in results`);
+              return [pr];
+            } else {
+              console.log(`PR #${prNumber} is not merged, skipping`);
+            }
+          } catch (error) {
+            console.log(`Error fetching PR #${prNumber}: ${error.message}`);
           }
-        } catch (error) {
-          console.log(`Error fetching PR #${prNumber}: ${error.message}`);
-          return [];
         }
       }
 
-      const branchMatch = commitMessage.match(/Merge branch '([^']+)'/);
-      if (branchMatch) {
-        const branchName = branchMatch[1];
-        console.log(`Found branch name in commit message: ${branchName}`);
+      const branchPatterns = [
+        /Merge branch '([^']+)'/,
+        /Merge.*branch ([^\s]+)/,
+        /Merged.*branch ([^\s]+)/
+      ];
 
-        const prs = await this.findPRsByBranchName(branchName);
-        console.log(`Found ${prs.length} PRs for branch ${branchName}`);
-        return prs;
-      }
+      for (const pattern of branchPatterns) {
+        const match = commitMessage.match(pattern);
+        if (match) {
+          const branchName = match[1];
+          console.log(`Found branch name in commit message: ${branchName} (pattern: ${pattern})`);
 
-      const autoMergeMatch = commitMessage.match(/Auto-merge of #(\d+)/);
-      if (autoMergeMatch) {
-        const prNumber = parseInt(autoMergeMatch[1]);
-        console.log(`Found auto-merge PR number: #${prNumber}`);
-
-        try {
-          const { data: pr } = await this.octokit.rest.pulls.get({
-            owner: this.context.repo.owner,
-            repo: this.context.repo.repo,
-            pull_number: prNumber,
-          });
-
-          if (pr.state === 'closed' && pr.merged_at) {
-            return [pr];
-          }
-        } catch (error) {
-          console.log(`Error fetching auto-merge PR #${prNumber}: ${error.message}`);
+          const prs = await this.findPRsByBranchName(branchName);
+          console.log(`Found ${prs.length} PRs for branch ${branchName}`);
+          
+          const mergedPRs = prs.filter(pr => pr.state === 'closed' && pr.merged_at);
+          console.log(`Filtered to ${mergedPRs.length} merged PRs`);
+          
+          return mergedPRs;
         }
       }
 
