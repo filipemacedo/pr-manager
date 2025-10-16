@@ -32411,24 +32411,13 @@ class PRLabelManager {
       return;
     }
 
+    const processedPRs = new Set();
+
     for (const commit of commits) {
       const commitSha = commit.sha || commit.id || 'unknown';
       const commitMessage = commit.message || 'No message';
 
       console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
-
-      if (commitSha && commitSha !== 'unknown') {
-        const prs = await this.findPRsByCommit(commitSha);
-        console.log(`Found ${prs.length} PRs by commit SHA`);
-
-        for (const pr of prs) {
-          console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
-          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
-          await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
-        }
-      } else {
-        console.log('Skipping commit SHA search - no valid SHA found');
-      }
 
       if (
         commitMessage.includes('Merge pull request') ||
@@ -32440,12 +32429,29 @@ class PRLabelManager {
         console.log(`Found ${prsByMessage.length} PRs by commit message`);
 
         for (const pr of prsByMessage) {
-          console.log(
-            `Adding deployed staging label to PR #${pr.number} (${pr.title}) via message`
-          );
-          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
-          await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
+          if (!processedPRs.has(pr.number)) {
+            console.log(
+              `Adding deployed staging label to PR #${pr.number} (${pr.title}) via message`
+            );
+            await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+            await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
+            processedPRs.add(pr.number);
+          }
         }
+      } else if (commitSha && commitSha !== 'unknown') {
+        const prs = await this.findPRsByCommit(commitSha);
+        console.log(`Found ${prs.length} PRs by commit SHA`);
+
+        for (const pr of prs) {
+          if (!processedPRs.has(pr.number) && pr.state === 'closed' && pr.merged_at) {
+            console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
+            await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+            await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
+            processedPRs.add(pr.number);
+          }
+        }
+      } else {
+        console.log('Skipping commit SHA search - no valid SHA found');
       }
     }
   }
@@ -32458,31 +32464,13 @@ class PRLabelManager {
       return;
     }
 
+    const processedPRs = new Set();
+
     for (const commit of commits) {
       const commitSha = commit.sha || commit.id || 'unknown';
       const commitMessage = commit.message || 'No message';
 
       console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
-
-      if (commitSha && commitSha !== 'unknown') {
-        const prs = await this.findPRsByCommit(commitSha);
-        console.log(`Found ${prs.length} PRs by commit SHA`);
-
-        for (const pr of prs) {
-          console.log(`Adding deployed production label to PR #${pr.number} (${pr.title})`);
-          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
-          await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
-          await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
-
-          await this.notifyPRAuthor(pr);
-
-          if (this.teamId) {
-            await this.notifyTeam(pr.number, 'production');
-          }
-        }
-      } else {
-        console.log('Skipping commit SHA search - no valid SHA found');
-      }
 
       if (
         commitMessage.includes('Merge pull request') ||
@@ -32494,19 +32482,43 @@ class PRLabelManager {
         console.log(`Found ${prsByMessage.length} PRs by commit message`);
 
         for (const pr of prsByMessage) {
-          console.log(
-            `Adding deployed production label to PR #${pr.number} (${pr.title}) via message`
-          );
-          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
-          await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
-          await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
+          if (!processedPRs.has(pr.number)) {
+            console.log(
+              `Adding deployed production label to PR #${pr.number} (${pr.title}) via message`
+            );
+            await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+            await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
+            await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
 
-          await this.notifyPRAuthor(pr);
+            await this.notifyPRAuthor(pr);
 
-          if (this.teamId) {
-            await this.notifyTeam(pr.number, 'production');
+            if (this.teamId) {
+              await this.notifyTeam(pr.number, 'production');
+            }
+            processedPRs.add(pr.number);
           }
         }
+      } else if (commitSha && commitSha !== 'unknown') {
+        const prs = await this.findPRsByCommit(commitSha);
+        console.log(`Found ${prs.length} PRs by commit SHA`);
+
+        for (const pr of prs) {
+          if (!processedPRs.has(pr.number) && pr.state === 'closed' && pr.merged_at) {
+            console.log(`Adding deployed production label to PR #${pr.number} (${pr.title})`);
+            await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+            await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
+            await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
+
+            await this.notifyPRAuthor(pr);
+
+            if (this.teamId) {
+              await this.notifyTeam(pr.number, 'production');
+            }
+            processedPRs.add(pr.number);
+          }
+        }
+      } else {
+        console.log('Skipping commit SHA search - no valid SHA found');
       }
     }
   }
@@ -32808,7 +32820,6 @@ class PRLabelManager {
             console.log(`Error dismissing review from ${review.user.login}: ${error.message}`);
           }
         }
-
 
         try {
           console.log(`Re-requesting reviews from all approvers: ${uniqueApprovers.join(', ')}`);
