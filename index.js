@@ -179,6 +179,7 @@ class PRLabelManager {
     const branchName = ref.replace('refs/heads/', '');
 
     console.log(`Processing push to ${branchName}`);
+    console.log(`Commits payload:`, JSON.stringify(commits, null, 2));
 
     if (branchName === this.stagingBranch) {
       await this.handleStagingDeployment(commits);
@@ -510,6 +511,7 @@ class PRLabelManager {
         pull_number: prNumber,
       });
 
+<<<<<<< Updated upstream
       const validApprovals = reviews.filter(
         review => review.state === 'APPROVED' && !review.dismissed_at
       );
@@ -526,6 +528,9 @@ class PRLabelManager {
       }
 
       return hasValidApproval;
+=======
+      return reviews.some(review => review.state === 'APPROVED');
+>>>>>>> Stashed changes
     } catch (error) {
       console.error('Error checking existing approval:', error);
       return false;
@@ -584,24 +589,42 @@ class PRLabelManager {
   async handleStagingDeployment(commits) {
     console.log('Handling staging deployment...');
 
-    for (const commit of commits) {
-      console.log(`Processing commit: ${commit.sha} - ${commit.message}`);
+    if (!commits || !Array.isArray(commits)) {
+      console.log('No commits found in payload');
+      return;
+    }
 
+    for (const commit of commits) {
+      const commitSha = commit.sha || commit.id || 'unknown';
+      const commitMessage = commit.message || 'No message';
+
+<<<<<<< Updated upstream
       const prs = await this.findPRsByCommit(commit.sha);
       console.log(`Found ${prs.length} PRs by commit SHA`);
+=======
+      console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
+>>>>>>> Stashed changes
 
-      for (const pr of prs) {
-        console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
-        await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
-        await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
+      if (commitSha && commitSha !== 'unknown') {
+        const prs = await this.findPRsByCommit(commitSha);
+        console.log(`Found ${prs.length} PRs by commit SHA`);
+
+        for (const pr of prs) {
+          console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
+          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+          await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
+        }
+      } else {
+        console.log('Skipping commit SHA search - no valid SHA found');
       }
 
       if (
-        commit.message.includes('Merge pull request') ||
-        commit.message.includes('Merge branch')
+        commitMessage.includes('Merge pull request') ||
+        commitMessage.includes('Merge branch') ||
+        commitMessage.includes('Merge remote-tracking branch')
       ) {
         console.log('Commit appears to be a merge, checking commit message...');
-        const prsByMessage = await this.findPRsByCommitMessage(commit.message);
+        const prsByMessage = await this.findPRsByCommitMessage(commitMessage);
         console.log(`Found ${prsByMessage.length} PRs by commit message`);
 
         for (const pr of prsByMessage) {
@@ -618,26 +641,58 @@ class PRLabelManager {
   async handleProductionDeployment(commits) {
     console.log('Handling production deployment...');
 
+    if (!commits || !Array.isArray(commits)) {
+      console.log('No commits found in payload');
+      return;
+    }
+
     for (const commit of commits) {
+<<<<<<< Updated upstream
       const prs = await this.findPRsByCommit(commit.sha);
       for (const pr of prs) {
         await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
         await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
         await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
+=======
+      const commitSha = commit.sha || commit.id || 'unknown';
+      const commitMessage = commit.message || 'No message';
+>>>>>>> Stashed changes
 
-        await this.notifyPRAuthor(pr);
+      console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
 
-        if (this.teamId) {
-          await this.notifyTeam(pr.number, 'production');
+      if (commitSha && commitSha !== 'unknown') {
+        const prs = await this.findPRsByCommit(commitSha);
+        console.log(`Found ${prs.length} PRs by commit SHA`);
+
+        for (const pr of prs) {
+          console.log(`Adding deployed production label to PR #${pr.number} (${pr.title})`);
+          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+          await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
+          await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
+
+          await this.notifyPRAuthor(pr);
+
+          if (this.teamId) {
+            await this.notifyTeam(pr.number, 'production');
+          }
         }
+      } else {
+        console.log('Skipping commit SHA search - no valid SHA found');
       }
 
       if (
-        commit.message.includes('Merge pull request') ||
-        commit.message.includes('Merge branch')
+        commitMessage.includes('Merge pull request') ||
+        commitMessage.includes('Merge branch') ||
+        commitMessage.includes('Merge remote-tracking branch')
       ) {
-        const prsByMessage = await this.findPRsByCommitMessage(commit.message);
+        console.log('Commit appears to be a merge, checking commit message...');
+        const prsByMessage = await this.findPRsByCommitMessage(commitMessage);
+        console.log(`Found ${prsByMessage.length} PRs by commit message`);
+
         for (const pr of prsByMessage) {
+          console.log(
+            `Adding deployed production label to PR #${pr.number} (${pr.title}) via message`
+          );
           await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
           await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
           await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
