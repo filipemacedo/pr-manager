@@ -32082,10 +32082,33 @@ class PRLabelManager {
   }
 
   async handlePRSynchronize(pr) {
-    await this.removeLabel(pr.number, LABELS.REQUEST_CHANGES);
-    await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
-
-    await this.notifyReviewers(pr);
+    console.log(`PR #${pr.number} synchronized - checking for previous approvals...`);
+    
+    // Verificar se havia aprovação anterior
+    const hadApproval = await this.checkExistingApproval(pr.number);
+    
+    if (hadApproval) {
+      console.log(`PR #${pr.number} had previous approval, removing approval labels and requesting re-review`);
+      
+      // Remover labels de aprovação
+      await this.removeLabel(pr.number, LABELS.APPROVED);
+      await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+      await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
+      await this.removeLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
+      
+      // Adicionar label de ready for review
+      await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
+      
+      // Notificar revisores que aprovaram anteriormente
+      await this.notifyApproversForReReview(pr);
+    } else {
+      console.log(`PR #${pr.number} had no previous approval, normal flow`);
+      
+      // Fluxo normal
+      await this.removeLabel(pr.number, LABELS.REQUEST_CHANGES);
+      await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
+      await this.notifyReviewers(pr);
+    }
   }
 
   async handlePRClosed(pr) {
@@ -32334,8 +32357,25 @@ class PRLabelManager {
         pull_number: prNumber,
       });
 
-      // Verificar se há pelo menos uma aprovação
-      return reviews.some(review => review.state === 'APPROVED');
+      // Filtrar apenas reviews aprovados que não foram dismissados
+      const validApprovals = reviews.filter(review => 
+        review.state === 'APPROVED' && 
+        !review.dismissed_at // Verificar se não foi dismissado
+      );
+
+      // Verificar se há pelo menos uma aprovação válida
+      const hasValidApproval = validApprovals.length > 0;
+      
+      if (hasValidApproval) {
+        console.log(`Found ${validApprovals.length} valid approval(s) for PR #${prNumber}`);
+        validApprovals.forEach(review => {
+          console.log(`- Approved by ${review.user.login} at ${review.submitted_at}`);
+        });
+      } else {
+        console.log(`No valid approvals found for PR #${prNumber}`);
+      }
+
+      return hasValidApproval;
     } catch (error) {
       console.error('Error checking existing approval:', error);
       return false;
@@ -32371,7 +32411,7 @@ class PRLabelManager {
       // Buscar PRs fechados que usaram essa branch (últimos 30 dias)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-      
+
       const { data: closedPRs } = await this.octokit.rest.pulls.list({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
@@ -32383,9 +32423,8 @@ class PRLabelManager {
       });
 
       // Filtrar apenas PRs merged recentes
-      const mergedPRs = closedPRs.filter(pr => 
-        pr.merged_at && 
-        new Date(pr.merged_at) > thirtyDaysAgo
+      const mergedPRs = closedPRs.filter(
+        pr => pr.merged_at && new Date(pr.merged_at) > thirtyDaysAgo
       );
 
       return [...openPRs, ...mergedPRs];
@@ -32404,7 +32443,7 @@ class PRLabelManager {
       // Buscar PRs por commit SHA
       const prs = await this.findPRsByCommit(commit.sha);
       console.log(`Found ${prs.length} PRs by commit SHA`);
-      
+
       for (const pr of prs) {
         console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
         await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
@@ -32419,9 +32458,11 @@ class PRLabelManager {
         console.log('Commit appears to be a merge, checking commit message...');
         const prsByMessage = await this.findPRsByCommitMessage(commit.message);
         console.log(`Found ${prsByMessage.length} PRs by commit message`);
-        
+
         for (const pr of prsByMessage) {
-          console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title}) via message`);
+          console.log(
+            `Adding deployed staging label to PR #${pr.number} (${pr.title}) via message`
+          );
           await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
           await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
         }
@@ -32544,14 +32585,14 @@ class PRLabelManager {
       if (prMatch) {
         const prNumber = parseInt(prMatch[1]);
         console.log(`Found PR number in commit message: #${prNumber}`);
-        
+
         try {
           const { data: pr } = await this.octokit.rest.pulls.get({
             owner: this.context.repo.owner,
             repo: this.context.repo.repo,
             pull_number: prNumber,
           });
-          
+
           // Verificar se o PR está fechado e foi merged
           if (pr.state === 'closed' && pr.merged_at) {
             console.log(`PR #${prNumber} was merged, including in results`);
@@ -32571,7 +32612,7 @@ class PRLabelManager {
       if (branchMatch) {
         const branchName = branchMatch[1];
         console.log(`Found branch name in commit message: ${branchName}`);
-        
+
         // Buscar PRs que usaram essa branch
         const prs = await this.findPRsByBranchName(branchName);
         console.log(`Found ${prs.length} PRs for branch ${branchName}`);
@@ -32583,14 +32624,14 @@ class PRLabelManager {
       if (autoMergeMatch) {
         const prNumber = parseInt(autoMergeMatch[1]);
         console.log(`Found auto-merge PR number: #${prNumber}`);
-        
+
         try {
           const { data: pr } = await this.octokit.rest.pulls.get({
             owner: this.context.repo.owner,
             repo: this.context.repo.repo,
             pull_number: prNumber,
           });
-          
+
           if (pr.state === 'closed' && pr.merged_at) {
             return [pr];
           }
@@ -32741,6 +32782,41 @@ class PRLabelManager {
       }
     } catch (error) {
       console.log(`Error notifying reviewers: ${error.message}`);
+    }
+  }
+
+  async notifyApproversForReReview(pr) {
+    try {
+      const { data: reviews } = await this.octokit.rest.pulls.listReviews({
+        owner: this.context.repo.owner,
+        repo: this.context.repo.repo,
+        pull_number: pr.number,
+      });
+
+      // Filtrar apenas revisores que aprovaram anteriormente
+      const approvers = reviews
+        .filter(review => review.state === 'APPROVED')
+        .map(review => review.user.login);
+
+      // Remover duplicatas
+      const uniqueApprovers = [...new Set(approvers)];
+
+      if (uniqueApprovers.length > 0) {
+        const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approval has been removed due to new changes.**`;
+
+        await this.octokit.rest.issues.createComment({
+          owner: this.context.repo.owner,
+          repo: this.context.repo.repo,
+          issue_number: pr.number,
+          body: comment,
+        });
+
+        console.log(`Notified ${uniqueApprovers.length} approvers for re-review: ${uniqueApprovers.join(', ')}`);
+      } else {
+        console.log('No previous approvers found to notify');
+      }
+    } catch (error) {
+      console.log(`Error notifying approvers for re-review: ${error.message}`);
     }
   }
 
