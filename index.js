@@ -958,7 +958,6 @@ class PRLabelManager {
       const uniqueApprovers = [...new Set(approvers)];
 
       if (uniqueApprovers.length > 0) {
-        let dismissedCount = 0;
         for (const review of approvedReviews) {
           try {
             await this.octokit.rest.pulls.dismissReview({
@@ -969,36 +968,23 @@ class PRLabelManager {
               message: 'Dismissed due to new commits - re-review required',
             });
             console.log(`Successfully dismissed review from ${review.user.login}`);
-            dismissedCount++;
           } catch (error) {
-            try {
-              await this.octokit.rest.pulls.requestReviewers({
-                owner: this.context.repo.owner,
-                repo: this.context.repo.repo,
-                pull_number: pr.number,
-                reviewers: [review.user.login],
-              });
-            } catch (requestError) {
-              console.log(
-                `Error re-requesting review from ${review.user.login}: ${requestError.message}`
-              );
-            }
+            console.log(`Error dismissing review from ${review.user.login}: ${error.message}`);
           }
         }
 
-        if (dismissedCount === 0) {
-          try {
-            console.log(`Re-requesting reviews from all approvers: ${uniqueApprovers.join(', ')}`);
-            await this.octokit.rest.pulls.requestReviewers({
-              owner: this.context.repo.owner,
-              repo: this.context.repo.repo,
-              pull_number: pr.number,
-              reviewers: uniqueApprovers,
-            });
-            console.log(`Successfully re-requested reviews from all approvers`);
-          } catch (error) {
-            console.log(`Error re-requesting reviews: ${error.message}`);
-          }
+
+        try {
+          console.log(`Re-requesting reviews from all approvers: ${uniqueApprovers.join(', ')}`);
+          await this.octokit.rest.pulls.requestReviewers({
+            owner: this.context.repo.owner,
+            repo: this.context.repo.repo,
+            pull_number: pr.number,
+            reviewers: uniqueApprovers,
+          });
+          console.log(`Successfully re-requested reviews from all approvers`);
+        } catch (error) {
+          console.log(`Error re-requesting reviews: ${error.message}`);
         }
 
         const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approvals have been dismissed due to new changes.**`;
