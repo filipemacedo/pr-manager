@@ -1121,9 +1121,6 @@ class PRLabelManager {
         case 'security':
           message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
           break;
-        case 'production':
-          message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
-          break;
         default:
           message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
       }
