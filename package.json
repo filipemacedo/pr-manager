@@ -24,7 +24,7 @@
     "@actions/github": "^6.0.0"
   },
   "devDependencies": {
-    "eslint": "^8.57.0",
+    "eslint": "^9.37.0",
     "prettier": "^3.2.5",
     "husky": "^9.0.11"
   },
