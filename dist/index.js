@@ -32005,7 +32005,6 @@ class PRLabelManager {
         }
         break;
       case 'dismissed':
-        // Review was dismissed, might need to update labels
         await this.handleReviewDismissed(pr);
         break;
     }
@@ -32036,7 +32035,6 @@ class PRLabelManager {
   async handleIssueCommentEvent() {
     const { action, issue, comment } = this.context.payload;
 
-    // Only process comments on pull requests
     if (!issue.pull_request) {
       return;
     }
@@ -32084,28 +32082,25 @@ class PRLabelManager {
 
   async handlePRSynchronize(pr) {
     console.log(`PR #${pr.number} synchronized - checking for previous approvals...`);
-    
-    // Verificar se havia aprovação anterior
+
     const hadApproval = await this.checkExistingApproval(pr.number);
-    
+
     if (hadApproval) {
-      console.log(`PR #${pr.number} had previous approval, removing approval labels and requesting re-review`);
-      
-      // Remover labels de aprovação
+      console.log(
+        `PR #${pr.number} had previous approval, removing approval labels and requesting re-review`
+      );
+
       await this.removeLabel(pr.number, LABELS.APPROVED);
       await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
       await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
       await this.removeLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
-      
-      // Adicionar label de ready for review
+
       await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
-      
-      // Notificar revisores que aprovaram anteriormente
+
       await this.notifyApproversForReReview(pr);
     } else {
       console.log(`PR #${pr.number} had no previous approval, normal flow`);
-      
-      // Fluxo normal
+
       await this.removeLabel(pr.number, LABELS.REQUEST_CHANGES);
       await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
       await this.notifyReviewers(pr);
@@ -32124,7 +32119,6 @@ class PRLabelManager {
   }
 
   async handlePRReadyForReview(pr) {
-    // Verificar se já tem aprovação antes de setar ready for review
     const hasApproval = await this.checkExistingApproval(pr.number);
     if (hasApproval) {
       await this.removeLabel(pr.number, LABELS.DRAFT);
@@ -32137,7 +32131,6 @@ class PRLabelManager {
   }
 
   async handlePREdited(pr, changes) {
-    // Se o título foi editado, revalidar labels baseadas no conteúdo
     if (changes && changes.title) {
       console.log('PR title edited, revalidating content-based labels...');
       await this.validateContentLabels(pr);
@@ -32263,7 +32256,6 @@ class PRLabelManager {
   }
 
   async validateContentLabels(pr) {
-    // Obter labels atuais do PR
     const { data: currentLabels } = await this.octokit.rest.issues.listLabelsOnIssue({
       owner: this.context.repo.owner,
       repo: this.context.repo.repo,
@@ -32272,7 +32264,6 @@ class PRLabelManager {
 
     const currentLabelNames = currentLabels.map(label => label.name);
 
-    // Remover labels baseadas em conteúdo que não se aplicam mais
     const contentBasedLabels = [
       LABELS.BREAKING_CHANGE,
       LABELS.DOCUMENTATION,
@@ -32284,7 +32275,6 @@ class PRLabelManager {
 
     for (const labelName of contentBasedLabels) {
       if (currentLabelNames.includes(labelName)) {
-        // Verificar se a label ainda se aplica
         const shouldHaveLabel = await this.shouldHaveContentLabel(pr, labelName);
         if (!shouldHaveLabel) {
           await this.removeLabel(pr.number, labelName);
@@ -32292,7 +32282,6 @@ class PRLabelManager {
       }
     }
 
-    // Reaplicar labels baseadas em conteúdo
     await this.checkContentLabels(pr);
   }
 
@@ -32358,25 +32347,7 @@ class PRLabelManager {
         pull_number: prNumber,
       });
 
-      // Filtrar apenas reviews aprovados que não foram dismissados
-      const validApprovals = reviews.filter(review => 
-        review.state === 'APPROVED' && 
-        !review.dismissed_at // Verificar se não foi dismissado
-      );
-
-      // Verificar se há pelo menos uma aprovação válida
-      const hasValidApproval = validApprovals.length > 0;
-      
-      if (hasValidApproval) {
-        console.log(`Found ${validApprovals.length} valid approval(s) for PR #${prNumber}`);
-        validApprovals.forEach(review => {
-          console.log(`- Approved by ${review.user.login} at ${review.submitted_at}`);
-        });
-      } else {
-        console.log(`No valid approvals found for PR #${prNumber}`);
-      }
-
-      return hasValidApproval;
+      return reviews.some(review => review.state === 'APPROVED');
     } catch (error) {
       console.error('Error checking existing approval:', error);
       return false;
@@ -32401,7 +32372,6 @@ class PRLabelManager {
 
   async findPRsByBranchName(branchName) {
     try {
-      // Buscar PRs abertos que usam essa branch
       const { data: openPRs } = await this.octokit.rest.pulls.list({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
@@ -32409,7 +32379,6 @@ class PRLabelManager {
         head: `${this.context.repo.owner}:${branchName}`,
       });
 
-      // Buscar PRs fechados que usaram essa branch (últimos 30 dias)
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
@@ -32423,7 +32392,6 @@ class PRLabelManager {
         per_page: 10,
       });
 
-      // Filtrar apenas PRs merged recentes
       const mergedPRs = closedPRs.filter(
         pr => pr.merged_at && new Date(pr.merged_at) > thirtyDaysAgo
       );
@@ -32443,23 +32411,12 @@ class PRLabelManager {
       return;
     }
 
-<<<<<<< Updated upstream
-      // Buscar PRs por commit SHA
-      const prs = await this.findPRsByCommit(commit.sha);
-      console.log(`Found ${prs.length} PRs by commit SHA`);
-
-      for (const pr of prs) {
-        console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
-        await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
-        await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
-=======
     for (const commit of commits) {
       const commitSha = commit.sha || commit.id || 'unknown';
       const commitMessage = commit.message || 'No message';
-      
+
       console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
 
-      // Buscar PRs por commit SHA (apenas se tiver SHA válido)
       if (commitSha && commitSha !== 'unknown') {
         const prs = await this.findPRsByCommit(commitSha);
         console.log(`Found ${prs.length} PRs by commit SHA`);
@@ -32471,10 +32428,8 @@ class PRLabelManager {
         }
       } else {
         console.log('Skipping commit SHA search - no valid SHA found');
->>>>>>> Stashed changes
       }
 
-      // Buscar PRs por mensagem de commit (caso o commit seja um merge)
       if (
         commitMessage.includes('Merge pull request') ||
         commitMessage.includes('Merge branch') ||
@@ -32506,14 +32461,13 @@ class PRLabelManager {
     for (const commit of commits) {
       const commitSha = commit.sha || commit.id || 'unknown';
       const commitMessage = commit.message || 'No message';
-      
+
       console.log(`Processing commit: ${commitSha} - ${commitMessage}`);
 
-      // Buscar PRs por commit SHA (apenas se tiver SHA válido)
       if (commitSha && commitSha !== 'unknown') {
         const prs = await this.findPRsByCommit(commitSha);
         console.log(`Found ${prs.length} PRs by commit SHA`);
-        
+
         for (const pr of prs) {
           console.log(`Adding deployed production label to PR #${pr.number} (${pr.title})`);
           await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
@@ -32530,7 +32484,6 @@ class PRLabelManager {
         console.log('Skipping commit SHA search - no valid SHA found');
       }
 
-      // Buscar PRs por mensagem de commit (caso o commit seja um merge)
       if (
         commitMessage.includes('Merge pull request') ||
         commitMessage.includes('Merge branch') ||
@@ -32539,9 +32492,11 @@ class PRLabelManager {
         console.log('Commit appears to be a merge, checking commit message...');
         const prsByMessage = await this.findPRsByCommitMessage(commitMessage);
         console.log(`Found ${prsByMessage.length} PRs by commit message`);
-        
+
         for (const pr of prsByMessage) {
-          console.log(`Adding deployed production label to PR #${pr.number} (${pr.title}) via message`);
+          console.log(
+            `Adding deployed production label to PR #${pr.number} (${pr.title}) via message`
+          );
           await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
           await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
           await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
@@ -32558,7 +32513,6 @@ class PRLabelManager {
 
   async findPRsByCommit(commitSha) {
     try {
-      // Primeiro, tentar encontrar o PR diretamente pelo commit SHA
       try {
         const { data: commit } = await this.octokit.rest.repos.getCommit({
           owner: this.context.repo.owner,
@@ -32566,7 +32520,6 @@ class PRLabelManager {
           ref: commitSha,
         });
 
-        // Verificar se o commit tem PRs associados
         if (commit.pull_requests && commit.pull_requests.length > 0) {
           const prs = [];
           for (const prRef of commit.pull_requests) {
@@ -32587,14 +32540,13 @@ class PRLabelManager {
         console.log(`Error getting commit details: ${error.message}`);
       }
 
-      // Fallback: buscar PRs abertos que contêm o commit
       const { data: prs } = await this.octokit.rest.pulls.list({
         owner: this.context.repo.owner,
         repo: this.context.repo.repo,
         state: 'open',
         sort: 'updated',
         direction: 'desc',
-        per_page: 50, // Limitar para performance
+        per_page: 50,
       });
 
       const matchingPRs = [];
@@ -32627,7 +32579,6 @@ class PRLabelManager {
     try {
       console.log(`Analyzing commit message: ${commitMessage}`);
 
-      // Extrair número do PR da mensagem de commit (formato GitHub)
       const prMatch = commitMessage.match(/Merge pull request #(\d+)/);
       if (prMatch) {
         const prNumber = parseInt(prMatch[1]);
@@ -32640,7 +32591,6 @@ class PRLabelManager {
             pull_number: prNumber,
           });
 
-          // Verificar se o PR está fechado e foi merged
           if (pr.state === 'closed' && pr.merged_at) {
             console.log(`PR #${prNumber} was merged, including in results`);
             return [pr];
@@ -32654,19 +32604,16 @@ class PRLabelManager {
         }
       }
 
-      // Extrair nome da branch da mensagem de commit
       const branchMatch = commitMessage.match(/Merge branch '([^']+)'/);
       if (branchMatch) {
         const branchName = branchMatch[1];
         console.log(`Found branch name in commit message: ${branchName}`);
 
-        // Buscar PRs que usaram essa branch
         const prs = await this.findPRsByBranchName(branchName);
         console.log(`Found ${prs.length} PRs for branch ${branchName}`);
         return prs;
       }
 
-      // Tentar outros padrões de merge
       const autoMergeMatch = commitMessage.match(/Auto-merge of #(\d+)/);
       if (autoMergeMatch) {
         const prNumber = parseInt(autoMergeMatch[1]);
@@ -32786,7 +32733,6 @@ class PRLabelManager {
       });
     } catch (error) {
       if (error.status === 404) {
-        // Label doesn't exist, create it
         const color = LABEL_COLORS[labelName] || '000000';
         const description = LABEL_DESCRIPTIONS[labelName] || `Auto-generated label: ${labelName}`;
 
@@ -32840,12 +32786,10 @@ class PRLabelManager {
         pull_number: pr.number,
       });
 
-      // Filtrar apenas revisores que aprovaram anteriormente
       const approvers = reviews
         .filter(review => review.state === 'APPROVED')
         .map(review => review.user.login);
 
-      // Remover duplicatas
       const uniqueApprovers = [...new Set(approvers)];
 
       if (uniqueApprovers.length > 0) {
@@ -32858,7 +32802,9 @@ class PRLabelManager {
           body: comment,
         });
 
-        console.log(`Notified ${uniqueApprovers.length} approvers for re-review: ${uniqueApprovers.join(', ')}`);
+        console.log(
+          `Notified ${uniqueApprovers.length} approvers for re-review: ${uniqueApprovers.join(', ')}`
+        );
       } else {
         console.log('No previous approvers found to notify');
       }
