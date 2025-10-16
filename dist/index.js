@@ -32445,7 +32445,7 @@ class PRLabelManager {
 
         for (const pr of prs) {
           console.log(`PR #${pr.number} - State: ${pr.state}, Merged: ${pr.merged_at}`);
-          const isRelevant = pr.state === 'closed' && pr.merged_at || pr.state === 'open';
+          const isRelevant = (pr.state === 'closed' && pr.merged_at) || pr.state === 'open';
           if (!processedPRs.has(pr.number) && isRelevant) {
             console.log(`Adding deployed staging label to PR #${pr.number} (${pr.title})`);
             await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
@@ -32662,7 +32662,9 @@ class PRLabelManager {
           const relevantPRs = prs.filter(pr => {
             const isMerged = pr.state === 'closed' && pr.merged_at;
             const isOpen = pr.state === 'open';
-            console.log(`PR #${pr.number} - State: ${pr.state}, Merged: ${pr.merged_at}, Relevant: ${isMerged || isOpen}`);
+            console.log(
+              `PR #${pr.number} - State: ${pr.state}, Merged: ${pr.merged_at}, Relevant: ${isMerged || isOpen}`
+            );
             return isMerged || isOpen;
           });
           console.log(`Filtered to ${relevantPRs.length} relevant PRs`);
@@ -32954,9 +32956,6 @@ class PRLabelManager {
           break;
         case 'security':
           message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
-          break;
-        case 'production':
-          message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
           break;
         default:
           message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
