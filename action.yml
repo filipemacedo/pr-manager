@@ -1,0 +1,39 @@
+name: 'PR Label Manager'
+description: 'Automatically manages PR labels and status based on various events and conditions'
+author: 'Filipe Macedo'
+branding:
+  icon: 'tag'
+  color: 'blue'
+
+inputs:
+  token:
+    description: 'GitHub token for API access'
+    required: true
+  stagingBranch:
+    description: 'Name of the staging branch (default: staging)'
+    required: false
+    default: 'staging'
+  productionBranch:
+    description: 'Name of the production branch (default: main)'
+    required: false
+    default: 'main'
+  abandonedTimeout:
+    description: 'Days of inactivity before marking PR as abandoned (default: 30)'
+    required: false
+    default: '30'
+  checkConflicts:
+    description: 'Whether to check for merge conflicts (default: true)'
+    required: false
+    default: 'true'
+  conflictCheckInterval:
+    description: 'Minutes between merge conflict checks (default: 60)'
+    required: false
+    default: '60'
+  teamId:
+    description: 'Team ID for global notifications (e.g., Org/Team-Name)'
+    required: false
+    default: ''
+
+runs:
+  using: 'node20'
+  main: 'index.js'

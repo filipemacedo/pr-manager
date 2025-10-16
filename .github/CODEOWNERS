@@ -1,0 +1,15 @@
+# Global code owners
+* @filipemacedo
+
+# GitHub Actions
+/.github/ @filipemacedo
+
+# Documentation
+README.md @filipemacedo
+CHANGELOG.md @filipemacedo
+PROJECT_SUMMARY.md @filipemacedo
+
+# Core files
+action.yml @filipemacedo
+index.js @filipemacedo
+package.json @filipemacedo

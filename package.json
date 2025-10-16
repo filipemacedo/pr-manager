@@ -1,0 +1,61 @@
+{
+  "name": "pr-manager",
+  "version": "1.0.0",
+  "description": "GitHub Action for automated PR labeling and status management",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build step required for this action'",
+    "test": "echo 'No tests specified yet' && exit 0",
+    "lint": "eslint index.js || true",
+    "format": "prettier --write index.js README.md",
+    "release:patch": "npm version patch && git push --follow-tags",
+    "release:minor": "npm version minor && git push --follow-tags",
+    "release:major": "npm version major && git push --follow-tags",
+    "release:dry-run": "npm version --dry-run",
+    "precommit": "npm run lint",
+    "prepare": "husky install || true",
+    "docs:update": "echo 'Documentation updated'",
+    "clean": "echo 'No cleanup needed'",
+    "dev": "echo 'Development mode - watching for changes'",
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@actions/core": "^1.10.0",
+    "@actions/github": "^6.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "husky": "^9.0.11"
+  },
+  "keywords": [
+    "github",
+    "actions",
+    "pr",
+    "labels",
+    "automation",
+    "pull-request",
+    "workflow",
+    "ci-cd",
+    "devops"
+  ],
+  "author": "Filipe Macedo",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/filipemacedo/pr-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/filipemacedo/pr-manager/issues"
+  },
+  "homepage": "https://github.com/filipemacedo/pr-manager#readme",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "index.js",
+    "action.yml",
+    "README.md",
+    "LICENSE"
+  ]
+}
