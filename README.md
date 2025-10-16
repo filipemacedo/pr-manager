@@ -264,6 +264,7 @@ permissions:
   issues: write
   pull-requests: write
   checks: read
+  pull-requests: write  # Required for dismissing reviews
 ```
 
 ## Examples
