@@ -113,3 +113,7 @@ Thumbs.db
 
 # GitHub Actions artifacts
 .github/workflows/*.yml.bak
+
+# Build artifacts
+dist/
+build/

@@ -101,23 +101,23 @@ class PRLabelManager {
       console.log(`Processing event: ${eventName}`);
 
       switch (eventName) {
-      case 'pull_request':
-        await this.handlePullRequestEvent();
-        break;
-      case 'pull_request_review':
-        await this.handlePullRequestReviewEvent();
-        break;
-      case 'push':
-        await this.handlePushEvent();
-        break;
-      case 'schedule':
-        await this.handleScheduledEvent();
-        break;
-      case 'issue_comment':
-        await this.handleIssueCommentEvent();
-        break;
-      default:
-        console.log(`Event ${eventName} not supported`);
+        case 'pull_request':
+          await this.handlePullRequestEvent();
+          break;
+        case 'pull_request_review':
+          await this.handlePullRequestReviewEvent();
+          break;
+        case 'push':
+          await this.handlePushEvent();
+          break;
+        case 'schedule':
+          await this.handleScheduledEvent();
+          break;
+        case 'issue_comment':
+          await this.handleIssueCommentEvent();
+          break;
+        default:
+          console.log(`Event ${eventName} not supported`);
       }
     } catch (error) {
       core.setFailed(`Action failed: ${error.message}`);
@@ -131,21 +131,21 @@ class PRLabelManager {
     console.log(`Processing PR ${action} for #${pr.number}`);
 
     switch (action) {
-    case 'opened':
-      await this.handlePROpened(pr);
-      break;
-    case 'synchronize':
-      await this.handlePRSynchronize(pr);
-      break;
-    case 'closed':
-      await this.handlePRClosed(pr);
-      break;
-    case 'converted_to_draft':
-      await this.handlePRConvertedToDraft(pr);
-      break;
-    case 'ready_for_review':
-      await this.handlePRReadyForReview(pr);
-      break;
+      case 'opened':
+        await this.handlePROpened(pr);
+        break;
+      case 'synchronize':
+        await this.handlePRSynchronize(pr);
+        break;
+      case 'closed':
+        await this.handlePRClosed(pr);
+        break;
+      case 'converted_to_draft':
+        await this.handlePRConvertedToDraft(pr);
+        break;
+      case 'ready_for_review':
+        await this.handlePRReadyForReview(pr);
+        break;
     }
   }
 
@@ -156,19 +156,19 @@ class PRLabelManager {
     console.log(`Processing review ${action} for PR #${pr.number}`);
 
     switch (action) {
-    case 'submitted':
-      if (review.state === 'changes_requested') {
-        await this.handleRequestChanges(pr);
-      } else if (review.state === 'approved') {
-        await this.handleApproval(pr);
-      } else if (review.state === 'commented') {
-        await this.handleReviewInProgress(pr);
-      }
-      break;
-    case 'dismissed':
-      // Review was dismissed, might need to update labels
-      await this.handleReviewDismissed(pr);
-      break;
+      case 'submitted':
+        if (review.state === 'changes_requested') {
+          await this.handleRequestChanges(pr);
+        } else if (review.state === 'approved') {
+          await this.handleApproval(pr);
+        } else if (review.state === 'commented') {
+          await this.handleReviewInProgress(pr);
+        }
+        break;
+      case 'dismissed':
+        // Review was dismissed, might need to update labels
+        await this.handleReviewDismissed(pr);
+        break;
     }
   }
 
@@ -561,7 +561,7 @@ class PRLabelManager {
         });
 
         console.log(
-          `Created label "${labelName}" with color ${color} and description: ${description}`,
+          `Created label "${labelName}" with color ${color} and description: ${description}`
         );
       } else {
         throw error;
@@ -626,23 +626,23 @@ class PRLabelManager {
       let message = '';
 
       switch (type) {
-      case 'action_required':
-        message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
-        break;
-      case 'urgent':
-        message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
-        break;
-      case 'breaking':
-        message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
-        break;
-      case 'security':
-        message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
-        break;
-      case 'production':
-        message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
-        break;
-      default:
-        message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
+        case 'action_required':
+          message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
+          break;
+        case 'urgent':
+          message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
+          break;
+        case 'breaking':
+          message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
+          break;
+        case 'security':
+          message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
+          break;
+        case 'production':
+          message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
+          break;
+        default:
+          message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
       }
 
       if (message) {

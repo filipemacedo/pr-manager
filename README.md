@@ -43,6 +43,8 @@ on:
     types: [opened, closed, converted_to_draft, ready_for_review, synchronize]
   pull_request_review:
     types: [submitted, dismissed]
+  issue_comment:
+    types: [created]
   push:
     branches: [main, staging]
   schedule:
@@ -52,6 +54,11 @@ on:
 jobs:
   pr-manager:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      checks: read
     steps:
       - name: Manage PR Labels
         uses: filipemacedo/pr-manager@v1
@@ -83,6 +90,11 @@ on:
 jobs:
   pr-manager:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+      checks: read
     steps:
       - name: Manage PR Labels
         uses: filipemacedo/pr-manager@v1
@@ -93,6 +105,7 @@ jobs:
           abandonedTimeout: '14'  # Mark as abandoned after 14 days
           checkConflicts: 'true'
           conflictCheckInterval: '30'  # Check conflicts every 30 minutes
+          teamId: 'Organization/Team-Name'
 ```
 
 ## Inputs
