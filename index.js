@@ -805,8 +805,14 @@ class PRLabelManager {
       for (const pattern of branchPatterns) {
         const match = commitMessage.match(pattern);
         if (match) {
-          const branchName = match[1];
+          let branchName = match[1];
           console.log(`Found branch name in commit message: ${branchName} (pattern: ${pattern})`);
+
+          // Remove 'origin/' prefix if present
+          if (branchName.startsWith('origin/')) {
+            branchName = branchName.replace('origin/', '');
+            console.log(`Cleaned branch name: ${branchName}`);
+          }
 
           const prs = await this.findPRsByBranchName(branchName);
           console.log(`Found ${prs.length} PRs for branch ${branchName}`);
