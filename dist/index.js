@@ -32796,6 +32796,7 @@ class PRLabelManager {
       if (uniqueApprovers.length > 0) {
         for (const review of approvedReviews) {
           try {
+            console.log(`Attempting to dismiss review from ${review.user.login} (ID: ${review.id})`);
             await this.octokit.rest.pulls.dismissReview({
               owner: this.context.repo.owner,
               repo: this.context.repo.repo,
@@ -32803,27 +32804,35 @@ class PRLabelManager {
               review_id: review.id,
               message: 'Dismissed due to new commits - re-review required',
             });
+            console.log(`Successfully dismissed review from ${review.user.login}`);
           } catch (error) {
+            console.log(`Failed to dismiss review from ${review.user.login}: ${error.message}`);
             try {
+              console.log(`Re-requesting review from ${review.user.login}`);
               await this.octokit.rest.pulls.requestReviewers({
                 owner: this.context.repo.owner,
                 repo: this.context.repo.repo,
                 pull_number: pr.number,
                 reviewers: [review.user.login],
               });
+              console.log(`Successfully re-requested review from ${review.user.login}`);
             } catch (requestError) {
-              console.log(`Error re-requesting review from ${review.user.login}: ${requestError.message}`);
+              console.log(
+                `Error re-requesting review from ${review.user.login}: ${requestError.message}`
+              );
             }
           }
         }
 
         try {
+          console.log(`Re-requesting reviews from all approvers: ${uniqueApprovers.join(', ')}`);
           await this.octokit.rest.pulls.requestReviewers({
             owner: this.context.repo.owner,
             repo: this.context.repo.repo,
             pull_number: pr.number,
             reviewers: uniqueApprovers,
           });
+          console.log(`Successfully re-requested reviews from all approvers`);
         } catch (error) {
           console.log(`Error re-requesting reviews: ${error.message}`);
         }
