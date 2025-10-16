@@ -101,23 +101,23 @@ class PRLabelManager {
       console.log(`Processing event: ${eventName}`);
 
       switch (eventName) {
-      case 'pull_request':
-        await this.handlePullRequestEvent();
-        break;
-      case 'pull_request_review':
-        await this.handlePullRequestReviewEvent();
-        break;
-      case 'push':
-        await this.handlePushEvent();
-        break;
-      case 'schedule':
-        await this.handleScheduledEvent();
-        break;
-      case 'issue_comment':
-        await this.handleIssueCommentEvent();
-        break;
-      default:
-        console.log(`Event ${eventName} not supported`);
+        case 'pull_request':
+          await this.handlePullRequestEvent();
+          break;
+        case 'pull_request_review':
+          await this.handlePullRequestReviewEvent();
+          break;
+        case 'push':
+          await this.handlePushEvent();
+          break;
+        case 'schedule':
+          await this.handleScheduledEvent();
+          break;
+        case 'issue_comment':
+          await this.handleIssueCommentEvent();
+          break;
+        default:
+          console.log(`Event ${eventName} not supported`);
       }
     } catch (error) {
       core.setFailed(`Action failed: ${error.message}`);
@@ -125,27 +125,30 @@ class PRLabelManager {
   }
 
   async handlePullRequestEvent() {
-    const { action, pull_request } = this.context.payload;
+    const { action, pull_request, changes } = this.context.payload;
     const pr = pull_request;
 
     console.log(`Processing PR ${action} for #${pr.number}`);
 
     switch (action) {
-    case 'opened':
-      await this.handlePROpened(pr);
-      break;
-    case 'synchronize':
-      await this.handlePRSynchronize(pr);
-      break;
-    case 'closed':
-      await this.handlePRClosed(pr);
-      break;
-    case 'converted_to_draft':
-      await this.handlePRConvertedToDraft(pr);
-      break;
-    case 'ready_for_review':
-      await this.handlePRReadyForReview(pr);
-      break;
+      case 'opened':
+        await this.handlePROpened(pr);
+        break;
+      case 'synchronize':
+        await this.handlePRSynchronize(pr);
+        break;
+      case 'closed':
+        await this.handlePRClosed(pr);
+        break;
+      case 'converted_to_draft':
+        await this.handlePRConvertedToDraft(pr);
+        break;
+      case 'ready_for_review':
+        await this.handlePRReadyForReview(pr);
+        break;
+      case 'edited':
+        await this.handlePREdited(pr, changes);
+        break;
     }
   }
 
@@ -156,19 +159,19 @@ class PRLabelManager {
     console.log(`Processing review ${action} for PR #${pr.number}`);
 
     switch (action) {
-    case 'submitted':
-      if (review.state === 'changes_requested') {
-        await this.handleRequestChanges(pr);
-      } else if (review.state === 'approved') {
-        await this.handleApproval(pr);
-      } else if (review.state === 'commented') {
-        await this.handleReviewInProgress(pr);
-      }
-      break;
-    case 'dismissed':
-      // Review was dismissed, might need to update labels
-      await this.handleReviewDismissed(pr);
-      break;
+      case 'submitted':
+        if (review.state === 'changes_requested') {
+          await this.handleRequestChanges(pr);
+        } else if (review.state === 'approved') {
+          await this.handleApproval(pr);
+        } else if (review.state === 'commented') {
+          await this.handleReviewInProgress(pr);
+        }
+        break;
+      case 'dismissed':
+        // Review was dismissed, might need to update labels
+        await this.handleReviewDismissed(pr);
+        break;
     }
   }
 
@@ -261,13 +264,31 @@ class PRLabelManager {
   }
 
   async handlePRReadyForReview(pr) {
-    await this.removeLabel(pr.number, LABELS.DRAFT);
-    await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
+    // Verificar se já tem aprovação antes de setar ready for review
+    const hasApproval = await this.checkExistingApproval(pr.number);
+    if (hasApproval) {
+      await this.removeLabel(pr.number, LABELS.DRAFT);
+      await this.addLabel(pr.number, LABELS.APPROVED);
+      await this.addLabel(pr.number, LABELS.READY_FOR_STAGING);
+    } else {
+      await this.removeLabel(pr.number, LABELS.DRAFT);
+      await this.addLabel(pr.number, LABELS.READY_FOR_REVIEW);
+    }
+  }
+
+  async handlePREdited(pr, changes) {
+    // Se o título foi editado, revalidar labels baseadas no conteúdo
+    if (changes && changes.title) {
+      console.log('PR title edited, revalidating content-based labels...');
+      await this.validateContentLabels(pr);
+    }
   }
 
   async handleRequestChanges(pr) {
     await this.removeLabel(pr.number, LABELS.READY_FOR_REVIEW);
     await this.removeLabel(pr.number, LABELS.IN_PROGRESS);
+    await this.removeLabel(pr.number, LABELS.APPROVED);
+    await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
     await this.addLabel(pr.number, LABELS.REQUEST_CHANGES);
   }
 
@@ -276,6 +297,9 @@ class PRLabelManager {
   }
 
   async handleApproval(pr) {
+    await this.removeLabel(pr.number, LABELS.READY_FOR_REVIEW);
+    await this.removeLabel(pr.number, LABELS.REQUEST_CHANGES);
+    await this.removeLabel(pr.number, LABELS.IN_PROGRESS);
     await this.addLabel(pr.number, LABELS.APPROVED);
     await this.addLabel(pr.number, LABELS.READY_FOR_STAGING);
   }
@@ -378,6 +402,110 @@ class PRLabelManager {
     }
   }
 
+  async validateContentLabels(pr) {
+    // Obter labels atuais do PR
+    const { data: currentLabels } = await this.octokit.rest.issues.listLabelsOnIssue({
+      owner: this.context.repo.owner,
+      repo: this.context.repo.repo,
+      issue_number: pr.number,
+    });
+
+    const currentLabelNames = currentLabels.map(label => label.name);
+
+    // Remover labels baseadas em conteúdo que não se aplicam mais
+    const contentBasedLabels = [
+      LABELS.BREAKING_CHANGE,
+      LABELS.DOCUMENTATION,
+      LABELS.REFACTOR,
+      LABELS.PERFORMANCE,
+      LABELS.SECURITY,
+      LABELS.URGENT,
+    ];
+
+    for (const labelName of contentBasedLabels) {
+      if (currentLabelNames.includes(labelName)) {
+        // Verificar se a label ainda se aplica
+        const shouldHaveLabel = await this.shouldHaveContentLabel(pr, labelName);
+        if (!shouldHaveLabel) {
+          await this.removeLabel(pr.number, labelName);
+        }
+      }
+    }
+
+    // Reaplicar labels baseadas em conteúdo
+    await this.checkContentLabels(pr);
+  }
+
+  async shouldHaveContentLabel(pr, labelName) {
+    const title = pr.title.toLowerCase();
+    const body = (pr.body || '').toLowerCase();
+    const combinedText = `${title} ${body}`;
+
+    switch (labelName) {
+      case LABELS.BREAKING_CHANGE:
+        return (
+          combinedText.includes('breaking change') ||
+          combinedText.includes('breaking:') ||
+          combinedText.includes('[breaking]')
+        );
+      case LABELS.DOCUMENTATION:
+        return (
+          combinedText.includes('docs:') ||
+          combinedText.includes('documentation') ||
+          combinedText.includes('readme') ||
+          combinedText.includes('doc/')
+        );
+      case LABELS.REFACTOR:
+        return (
+          combinedText.includes('refactor:') ||
+          combinedText.includes('refactoring') ||
+          combinedText.includes('cleanup') ||
+          combinedText.includes('restructure')
+        );
+      case LABELS.PERFORMANCE:
+        return (
+          combinedText.includes('perf:') ||
+          combinedText.includes('performance') ||
+          combinedText.includes('optimize') ||
+          combinedText.includes('optimization')
+        );
+      case LABELS.SECURITY:
+        return (
+          combinedText.includes('security:') ||
+          combinedText.includes('security') ||
+          combinedText.includes('vulnerability') ||
+          combinedText.includes('cve-') ||
+          combinedText.includes('auth') ||
+          combinedText.includes('permission')
+        );
+      case LABELS.URGENT:
+        return (
+          combinedText.includes('urgent') ||
+          combinedText.includes('asap') ||
+          combinedText.includes('critical') ||
+          combinedText.includes('emergency')
+        );
+      default:
+        return false;
+    }
+  }
+
+  async checkExistingApproval(prNumber) {
+    try {
+      const { data: reviews } = await this.octokit.rest.pulls.listReviews({
+        owner: this.context.repo.owner,
+        repo: this.context.repo.repo,
+        pull_number: prNumber,
+      });
+
+      // Verificar se há pelo menos uma aprovação
+      return reviews.some(review => review.state === 'APPROVED');
+    } catch (error) {
+      console.error('Error checking existing approval:', error);
+      return false;
+    }
+  }
+
   async findPRByBranch(branchName) {
     try {
       const { data: prs } = await this.octokit.rest.pulls.list({
@@ -398,10 +526,23 @@ class PRLabelManager {
     console.log('Handling staging deployment...');
 
     for (const commit of commits) {
+      // Buscar PRs por commit SHA
       const prs = await this.findPRsByCommit(commit.sha);
       for (const pr of prs) {
         await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
         await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
+      }
+
+      // Buscar PRs por mensagem de commit (caso o commit seja um merge)
+      if (
+        commit.message.includes('Merge pull request') ||
+        commit.message.includes('Merge branch')
+      ) {
+        const prsByMessage = await this.findPRsByCommitMessage(commit.message);
+        for (const pr of prsByMessage) {
+          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+          await this.addLabel(pr.number, LABELS.DEPLOYED_STAGING);
+        }
       }
     }
   }
@@ -410,15 +551,36 @@ class PRLabelManager {
     console.log('Handling production deployment...');
 
     for (const commit of commits) {
+      // Buscar PRs por commit SHA
       const prs = await this.findPRsByCommit(commit.sha);
       for (const pr of prs) {
         await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+        await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
         await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
 
         await this.notifyPRAuthor(pr);
 
         if (this.teamId) {
           await this.notifyTeam(pr.number, 'production');
+        }
+      }
+
+      // Buscar PRs por mensagem de commit (caso o commit seja um merge)
+      if (
+        commit.message.includes('Merge pull request') ||
+        commit.message.includes('Merge branch')
+      ) {
+        const prsByMessage = await this.findPRsByCommitMessage(commit.message);
+        for (const pr of prsByMessage) {
+          await this.removeLabel(pr.number, LABELS.READY_FOR_STAGING);
+          await this.removeLabel(pr.number, LABELS.DEPLOYED_STAGING);
+          await this.addLabel(pr.number, LABELS.DEPLOYED_PRODUCTION);
+
+          await this.notifyPRAuthor(pr);
+
+          if (this.teamId) {
+            await this.notifyTeam(pr.number, 'production');
+          }
         }
       }
     }
@@ -453,6 +615,34 @@ class PRLabelManager {
       return matchingPRs;
     } catch (error) {
       console.log(`Error finding PRs by commit: ${error.message}`);
+      return [];
+    }
+  }
+
+  async findPRsByCommitMessage(commitMessage) {
+    try {
+      // Extrair número do PR da mensagem de commit
+      const prMatch = commitMessage.match(/Merge pull request #(\d+)/);
+      if (prMatch) {
+        const prNumber = parseInt(prMatch[1]);
+        const { data: pr } = await this.octokit.rest.pulls.get({
+          owner: this.context.repo.owner,
+          repo: this.context.repo.repo,
+          pull_number: prNumber,
+        });
+        return [pr];
+      }
+
+      // Extrair nome da branch da mensagem de commit
+      const branchMatch = commitMessage.match(/Merge branch '([^']+)'/);
+      if (branchMatch) {
+        const branchName = branchMatch[1];
+        return await this.findPRByBranch(branchName);
+      }
+
+      return [];
+    } catch (error) {
+      console.log(`Error finding PRs by commit message: ${error.message}`);
       return [];
     }
   }
@@ -561,7 +751,7 @@ class PRLabelManager {
         });
 
         console.log(
-          `Created label "${labelName}" with color ${color} and description: ${description}`,
+          `Created label "${labelName}" with color ${color} and description: ${description}`
         );
       } else {
         throw error;
@@ -626,23 +816,23 @@ class PRLabelManager {
       let message = '';
 
       switch (type) {
-      case 'action_required':
-        message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
-        break;
-      case 'urgent':
-        message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
-        break;
-      case 'breaking':
-        message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
-        break;
-      case 'security':
-        message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
-        break;
-      case 'production':
-        message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
-        break;
-      default:
-        message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
+        case 'action_required':
+          message = `🚨 **Action Required** - @${this.teamId}\n\n@${commenter} has flagged this PR as requiring action. Please review and take necessary steps.`;
+          break;
+        case 'urgent':
+          message = `⚡ **Urgent** - @${this.teamId}\n\nThis PR has been marked as urgent and requires immediate attention.`;
+          break;
+        case 'breaking':
+          message = `💥 **Breaking Change** - @${this.teamId}\n\nThis PR contains breaking changes that may affect other systems.`;
+          break;
+        case 'security':
+          message = `🔒 **Security** - @${this.teamId}\n\nThis PR contains security-related changes that require careful review.`;
+          break;
+        case 'production':
+          message = `🚀 **Production Deployment** - @${this.teamId}\n\nPR #${prNumber} has been deployed to production.`;
+          break;
+        default:
+          message = `📢 **Notification** - @${this.teamId}\n\nUpdate regarding PR #${prNumber}.`;
       }
 
       if (message) {
