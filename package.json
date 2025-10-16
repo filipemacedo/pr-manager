@@ -4,7 +4,7 @@
   "description": "GitHub Action for automated PR labeling and status management",
   "main": "index.js",
   "scripts": {
-    "build": "echo 'No build step required for this action'",
+    "build": "ncc build index.js -o dist",
     "test": "echo 'No tests specified yet' && exit 0",
     "lint": "eslint index.js || true",
     "format": "prettier --write index.js README.md",
@@ -24,6 +24,7 @@
     "@actions/github": "^6.0.0"
   },
   "devDependencies": {
+    "@vercel/ncc": "^0.38.1",
     "eslint": "^9.37.0",
     "prettier": "^3.2.5",
     "husky": "^9.0.11"

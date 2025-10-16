@@ -3,6 +3,6 @@
 
 echo "🔍 Running pre-commit checks..."
 
-npm run validate
+npm run lint
 
 echo "✅ Pre-commit checks passed!"

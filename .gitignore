@@ -71,7 +71,6 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -115,5 +114,4 @@ Thumbs.db
 .github/workflows/*.yml.bak
 
 # Build artifacts
-dist/
 build/
