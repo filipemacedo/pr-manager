@@ -958,6 +958,7 @@ class PRLabelManager {
       const uniqueApprovers = [...new Set(approvers)];
 
       if (uniqueApprovers.length > 0) {
+        let dismissedCount = 0;
         for (const review of approvedReviews) {
           try {
             await this.octokit.rest.pulls.dismissReview({
@@ -967,6 +968,11 @@ class PRLabelManager {
               review_id: review.id,
               message: 'Dismissed due to new commits - re-review required',
             });
+<<<<<<< Updated upstream
+=======
+            console.log(`Successfully dismissed review from ${review.user.login}`);
+            dismissedCount++;
+>>>>>>> Stashed changes
           } catch (error) {
             try {
               await this.octokit.rest.pulls.requestReviewers({
@@ -983,6 +989,7 @@ class PRLabelManager {
           }
         }
 
+<<<<<<< Updated upstream
         try {
           await this.octokit.rest.pulls.requestReviewers({
             owner: this.context.repo.owner,
@@ -992,6 +999,21 @@ class PRLabelManager {
           });
         } catch (error) {
           console.log(`Error re-requesting reviews: ${error.message}`);
+=======
+        if (dismissedCount === 0) {
+          try {
+            console.log(`Re-requesting reviews from all approvers: ${uniqueApprovers.join(', ')}`);
+            await this.octokit.rest.pulls.requestReviewers({
+              owner: this.context.repo.owner,
+              repo: this.context.repo.repo,
+              pull_number: pr.number,
+              reviewers: uniqueApprovers,
+            });
+            console.log(`Successfully re-requested reviews from all approvers`);
+          } catch (error) {
+            console.log(`Error re-requesting reviews: ${error.message}`);
+          }
+>>>>>>> Stashed changes
         }
 
         const comment = `🔄 **Re-review Required**\n\n@${uniqueApprovers.join(' @')} \n\nNew commits have been pushed after your approval. Please review the changes and re-approve if everything looks good.\n\n**Previous approvals have been dismissed due to new changes.**`;
@@ -1010,6 +1032,16 @@ class PRLabelManager {
 
   async notifyPRAuthor(pr, type = 'production') {
     try {
+      if (type === 'production') {
+        const hasRecentNotification = await this.hasRecentDeployNotification(pr.number);
+        if (hasRecentNotification) {
+          console.log(
+            `Skipping production notification for PR #${pr.number} - recent notification found`
+          );
+          return;
+        }
+      }
+
       let message = '';
 
       if (type === 'production') {
@@ -1028,6 +1060,34 @@ class PRLabelManager {
       }
     } catch (error) {
       console.log(`Error notifying PR author: ${error.message}`);
+    }
+  }
+
+  async hasRecentDeployNotification(prNumber) {
+    try {
+      const { data: comments } = await this.octokit.rest.issues.listComments({
+        owner: this.context.repo.owner,
+        repo: this.context.repo.repo,
+        issue_number: prNumber,
+        per_page: 10,
+        sort: 'created',
+        direction: 'desc',
+      });
+
+      const now = new Date();
+      const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+
+      return comments.some(comment => {
+        const commentDate = new Date(comment.created_at);
+        return (
+          commentDate > oneHourAgo &&
+          (comment.body.includes('deployed to production') ||
+            comment.body.includes('Production Deployment'))
+        );
+      });
+    } catch (error) {
+      console.log(`Error checking recent notifications: ${error.message}`);
+      return false;
     }
   }
 
