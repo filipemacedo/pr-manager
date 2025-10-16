@@ -1,6 +1,6 @@
 {
   "name": "pr-manager",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "GitHub Action for automated PR labeling and status management",
   "main": "index.js",
   "scripts": {
