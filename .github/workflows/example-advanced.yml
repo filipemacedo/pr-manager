@@ -22,7 +22,7 @@ jobs:
       checks: read
     steps:
       - name: Manage PR Labels
-        uses: your-username/pr-manager@v1
+        uses: filipemacedo/pr-manager@main
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           stagingBranch: 'staging'
